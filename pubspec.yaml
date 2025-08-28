@@ -1,0 +1,133 @@
+name: chs_crm
+description: "A CRM system for foreclosure and real estate file management."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase - Updated to compatible versions
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+  firebase_storage: ^12.4.10
+  file_picker: ^10.3.2
+  
+  # State Management
+  provider: ^6.1.2
+
+  # Theme Storage
+  shared_preferences: ^2.5.3
+  
+  # UI Components
+  cupertino_icons: ^1.0.8
+  
+  # Utilities
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+  - family: Ghibli
+    fonts:
+      - asset: assets/fonts/Eyad Al-Samman - Ghibli.otf
+      - asset: assets/fonts/Eyad Al-Samman - Ghibli-Bold.otf
+        weight: 700
+
+  - family: Montserrat
+    fonts:
+      - asset: assets/fonts/Montserrat-Bold.ttf
+      - asset: assets/fonts/Montserrat-Regular.ttf
+        
+  - family: NES
+    fonts:
+      - asset: assets/fonts/PressStart2P-Regular.ttf
+        
+  - family: SuperMario256
+    fonts:
+      - asset: assets/fonts/SuperMario256.ttf 
+        
+  - family: Cocogoose
+    fonts:
+      - asset: assets/fonts/cocogoose-gradient.ttf
+        weight: 700
+      - asset: assets/fonts/cocogoose-outlined.ttf     
+        weight: 400
+
+  - family: actionj
+    fonts:
+      - asset: assets/fonts/actionj.ttf
+
+  - family: PassionOne
+    fonts:
+      - asset: assets/fonts/PassionOne-Regular.ttf
+      - asset: assets/fonts/PassionOne-Black.ttf
+      - asset: assets/fonts/PassionOne-Bold.ttf
+
+  - family: MotterTektura
+    fonts:
+      - asset: assets/fonts/MotterTekturaNormal.ttf
+
+  - family: Stamped
+    fonts:
+      - asset: assets/fonts/stamped.ttf
+
+  - family: Eroded
+    fonts:
+      - asset: assets/fonts/eroded-personal-use-regular.ttf
+
+  - family: Bangers
+    fonts:
+      - asset: assets/fonts/Bangers.ttf
+
+  - family: SedgwickAveDisplay
+    fonts:
+      - asset: assets/fonts/SedgwickAveDisplay-Regular.ttf
+        
+        
+  - family: CHLORINR
+    fonts:
+      - asset: assets/fonts/CHLORINR.ttf
+        
+  - family: KOMIKAX_
+    fonts:
+      - asset: assets/fonts/KOMIKAX_.ttf
+        
+  - family: coolvetica
+    fonts:
+      - asset: assets/fonts/coolvetica.ttf  
+        
+  - family: exprswy
+    fonts:
+      - asset: assets/fonts/exprswy.ttf
+        
+  - family: Banidca
+    fonts:
+      - asset: assets/fonts/Bandica.otf  
+
+  - family: Ghasan
+    fonts:
+      - asset: assets/fonts/ghasan.ttf  
+
+  - family: SFPro
+    fonts:
+      - asset: assets/fonts/BlackItalic.otf
+      - asset: assets/fonts/DisplayBold.otf  
+      - asset: assets/fonts/HeavyItalic.otf 
+      - asset: assets/fonts/LightItalic.otf 
+      - asset: assets/fonts/Medium.otf 
+      - asset: assets/fonts/Regular.otf 
+      - asset: assets/fonts/SemiBold.otf 
+      - asset: assets/fonts/ThinItalic.otf      
+      - asset: assets/fonts/UltraLightItalic.otf

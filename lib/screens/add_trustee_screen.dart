@@ -1,0 +1,217 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/property_provider.dart';
+import '../models/property_file.dart';
+import '../utils/validators.dart';
+
+class AddTrusteeScreen extends StatefulWidget {
+  final PropertyFile property;
+  final Trustee? existingTrustee;
+
+  const AddTrusteeScreen({
+    super.key,
+    required this.property,
+    this.existingTrustee,
+  });
+
+  @override
+  State<AddTrusteeScreen> createState() => _AddTrusteeScreenState();
+}
+
+class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _institutionController = TextEditingController();
+  final _phoneController = TextEditingController();
+  bool _isLoading = false;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingTrustee != null) {
+      _isEditing = true;
+      _nameController.text = widget.existingTrustee!.name;
+      _institutionController.text = widget.existingTrustee!.institution;
+      _phoneController.text = widget.existingTrustee!.phoneNumber ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _institutionController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveTrustee() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      List<Trustee> updatedTrustees = List.from(widget.property.trustees);
+
+      if (_isEditing) {
+        final updatedTrustee = Trustee(
+          id: widget.existingTrustee!.id,
+          name: _nameController.text.trim(),
+          institution: _institutionController.text.trim(),
+          phoneNumber:
+              _phoneController.text.trim().isNotEmpty
+                  ? _phoneController.text.trim()
+                  : null,
+          createdAt: widget.existingTrustee!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+
+        final index = updatedTrustees.indexWhere(
+          (t) => t.id == widget.existingTrustee!.id,
+        );
+        if (index != -1) {
+          updatedTrustees[index] = updatedTrustee;
+        }
+      } else {
+        final newTrustee = Trustee(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: _nameController.text.trim(),
+          institution: _institutionController.text.trim(),
+          phoneNumber:
+              _phoneController.text.trim().isNotEmpty
+                  ? _phoneController.text.trim()
+                  : null,
+          createdAt: DateTime.now(),
+        );
+        updatedTrustees.add(newTrustee);
+      }
+
+      final updatedProperty = PropertyFile(
+        id: widget.property.id,
+        fileNumber: widget.property.fileNumber,
+        address: widget.property.address,
+        city: widget.property.city,
+        state: widget.property.state,
+        zipCode: widget.property.zipCode,
+        loanAmount: widget.property.loanAmount,
+        amountOwed: widget.property.amountOwed,
+        arrears: widget.property.arrears,
+        contacts: widget.property.contacts,
+        documents: widget.property.documents,
+        judgments: widget.property.judgments,
+        notes: widget.property.notes,
+        trustees: updatedTrustees,
+        auctions: widget.property.auctions,
+        vesting: widget.property.vesting,
+        createdAt: widget.property.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      await context.read<PropertyProvider>().updateProperty(updatedProperty);
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Trustee ${_isEditing ? 'updated' : 'added'} successfully',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error ${_isEditing ? 'updating' : 'adding'} trustee: $e',
+            ),
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Trustee' : 'Add Trustee'),
+        leading: IconButton(
+          icon: const Icon(Icons.home),
+          onPressed:
+              () => Navigator.of(context).popUntil((route) => route.isFirst),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: _isLoading ? null : _saveTrustee,
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : Text(
+                      _isEditing ? 'Update' : 'Save',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+          ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name *',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+              ),
+              validator:
+                  (value) => Validators.validateRequired(value, 'a name'),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _institutionController,
+              decoration: const InputDecoration(
+                labelText: 'Institution *',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.business),
+              ),
+              validator:
+                  (value) =>
+                      Validators.validateRequired(value, 'an institution'),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phoneController,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
