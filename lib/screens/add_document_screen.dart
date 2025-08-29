@@ -564,7 +564,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'Document Type *',
                 border: OutlineInputBorder(),

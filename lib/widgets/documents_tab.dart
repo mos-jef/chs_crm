@@ -5,7 +5,8 @@ import '../models/property_file.dart';
 import '../screens/add_document_screen.dart';
 import '../providers/property_provider.dart';
 import '../services/document_service.dart';
-import 'dart:html' as html show window;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 
 class DocumentsTab extends StatelessWidget {
   final PropertyFile property;
@@ -65,7 +66,7 @@ class DocumentsTab extends StatelessWidget {
                       ),
                       onTap: () {
                         if (document.url != null) {
-                          html.window.open(document.url!, '_blank');
+                          web.window.open(document.url!, '_blank');
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -114,7 +115,7 @@ class DocumentsTab extends StatelessWidget {
                         onSelected: (value) async {
                           if (value == 'view') {
                             if (document.url != null) {
-                              html.window.open(document.url!, '_blank');
+                              web.window.open(document.url!, '_blank');
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

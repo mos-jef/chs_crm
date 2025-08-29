@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/property_file.dart';
-import 'dart:html' as html show window;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 
 class OverviewTab extends StatelessWidget {
   final PropertyFile property;
@@ -138,7 +139,7 @@ class OverviewTab extends StatelessWidget {
                   child: InkWell(
                     onTap: () {
                       if (document.url != null) {
-                        html.window.open(document.url!, '_blank');
+                        web.window.open(document.url!, '_blank');
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -204,7 +205,7 @@ class OverviewTab extends StatelessWidget {
               : [
                 InkWell(
                   onTap: () {
-                    html.window.open(property.zillowUrl!, '_blank');
+                    web.window.open(property.zillowUrl!, '_blank');
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
-import '../utils/app_themes.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -29,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
                     builder: (context, themeProvider, child) {
                       return Column(
                         children: [
-                          // Theme Style Selection
+                          // Theme Style Selection - Updated RadioGroup pattern
                           Text(
                             'Theme Style',
                             style: Theme.of(context).textTheme.titleMedium,
@@ -40,10 +39,9 @@ class SettingsScreen extends StatelessWidget {
                               'Warm colors with orange/red accents',
                             ),
                             value: 'athlete',
-                            groupValue:
-                                themeProvider.isAthleteTheme
-                                    ? 'athlete'
-                                    : 'ninja',
+                            groupValue: themeProvider.isAthleteTheme
+                                ? 'athlete'
+                                : 'ninja',
                             onChanged: (value) {
                               if (value == 'athlete') {
                                 themeProvider.switchToAthlete();
@@ -56,10 +54,9 @@ class SettingsScreen extends StatelessWidget {
                               'Cool colors with teal/green accents',
                             ),
                             value: 'ninja',
-                            groupValue:
-                                themeProvider.isAthleteTheme
-                                    ? 'athlete'
-                                    : 'ninja',
+                            groupValue: themeProvider.isAthleteTheme
+                                ? 'athlete'
+                                : 'ninja',
                             onChanged: (value) {
                               if (value == 'ninja') {
                                 themeProvider.switchToNinja();

@@ -222,7 +222,7 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 labelText: 'Status *',
                 border: OutlineInputBorder(),
@@ -306,7 +306,7 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedState,
+                    initialValue: _selectedState,
                     decoration: const InputDecoration(
                       labelText: 'State *',
                       border: OutlineInputBorder(),

@@ -153,7 +153,7 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedVestingType,
+              initialValue: _selectedVestingType,
               decoration: const InputDecoration(
                 labelText: 'Vesting Type *',
                 border: OutlineInputBorder(),

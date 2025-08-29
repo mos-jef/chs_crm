@@ -1,4 +1,5 @@
-import 'dart:html' as html show window;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 
 import 'package:chs_crm/providers/theme_provider.dart';
 import 'package:chs_crm/utils/app_themes.dart';
@@ -96,7 +97,7 @@ class _ZillowTabState extends State<ZillowTab> {
   void _openZillowUrl() {
     final url = _urlController.text.trim();
     if (url.isNotEmpty) {
-      html.window.open(url, '_blank');
+      web.window.open(url, '_blank');
     }
   }
 
@@ -253,7 +254,7 @@ class _ZillowTabState extends State<ZillowTab> {
                         builder: (context, themeProvider, child) {
                           return InkWell(
                             onTap:
-                                () => html.window.open(
+                                () => web.window.open(
                                   widget.property.zillowUrl!,
                                   '_blank',
                                 ),

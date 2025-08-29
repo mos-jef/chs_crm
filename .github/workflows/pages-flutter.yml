@@ -25,8 +25,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # 👇 Pin to your local version to avoid surprises (you said Flutter 3.22.2)
-          flutter-version: '3.22.2'
+          # 👇 Updated to match your local version
+          flutter-version: '3.35.2'
           cache: true
 
       # Make sure web is enabled (harmless if already enabled)
