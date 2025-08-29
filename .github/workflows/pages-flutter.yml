@@ -2,7 +2,7 @@ name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -24,28 +24,38 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "stable"
+          channel: 'stable'
+          # 👇 Pin to your local version to avoid surprises (you said Flutter 3.22.2)
+          flutter-version: '3.22.2'
           cache: true
 
-      - name: Flutter version
-        run: flutter --version
+      # Make sure web is enabled (harmless if already enabled)
+      - name: Enable Flutter web
+        run: flutter config --enable-web
 
-      - name: Fetch packages
-        run: flutter pub get
+      - name: Show tool versions
+        run: |
+          flutter --version
+          dart --version
 
-      # Custom domain serves at '/', so keep <base href="/"> in web/index.html
+      - name: Pub get (clean + get for a fresh lock)
+        run: |
+          flutter clean
+          flutter pub get
+
+      # Build for your root custom domain
       - name: Build Flutter Web
-        run: flutter build web --release
+        run: flutter build web --release --base-href / --verbose
 
-      # SPA fallback for deep links
+      # SPA deep-link fallback
       - name: Add SPA 404 fallback
         run: cp build/web/index.html build/web/404.html
 
-      # Ensure Pages serves files as-is (no Jekyll processing)
+      # Ensure Pages serves files as-is (no Jekyll)
       - name: Disable Jekyll
         run: touch build/web/.nojekyll
 
-      # Sanity check – make sure index.html is present in the artifact root
+      # Sanity check – make sure index.html is present
       - name: List build output (debug)
         run: |
           echo "Listing build/web:"
@@ -55,7 +65,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "build/web"
+          path: 'build/web'
 
   deploy:
     environment:
@@ -67,3 +77,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+c
