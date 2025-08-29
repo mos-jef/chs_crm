@@ -97,12 +97,13 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
         zipCode: widget.property.zipCode,
         loanAmount: widget.property.loanAmount,
         amountOwed: widget.property.amountOwed,
-        arrears: widget.property.arrears,
+        arrears: widget.property.arrears, // ✅ Already present
+        zillowUrl: widget.property.zillowUrl, // ✅ Already present
         contacts: widget.property.contacts,
         documents: widget.property.documents,
         judgments: widget.property.judgments,
         notes: widget.property.notes,
-        trustees: updatedTrustees,
+        trustees: updatedTrustees, // ✅ This is correct
         auctions: widget.property.auctions,
         vesting: widget.property.vesting,
         createdAt: widget.property.createdAt,

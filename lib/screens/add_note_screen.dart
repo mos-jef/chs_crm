@@ -46,7 +46,22 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     });
 
     try {
-      List<Note> updatedNotes = List.from(widget.property.notes);
+      // CRITICAL FIX: Get the latest property data before updating
+      final propertyProvider = context.read<PropertyProvider>();
+      final latestProperty = propertyProvider.getPropertyById(widget.property.id,);
+
+      if (latestProperty == null) {
+        throw Exception('Property not found in cache');
+      }
+
+      print('=== BEFORE NOTE UPDATE ===');
+      print('Latest property trustees: ${latestProperty.trustees.length}');
+      print('Latest property notes: ${latestProperty.notes.length}');
+      print('Latest property auctions: ${latestProperty.auctions.length}');
+
+      List<Note> updatedNotes = List.from(
+        latestProperty.notes,
+      ); // Use LATEST property
 
       if (_isEditing) {
         // Update existing note
@@ -75,26 +90,34 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
         updatedNotes.add(newNote);
       }
 
+      // CRITICAL: Use ALL data from the LATEST property
       final updatedProperty = PropertyFile(
-        id: widget.property.id,
-        fileNumber: widget.property.fileNumber,
-        address: widget.property.address,
-        city: widget.property.city,
-        state: widget.property.state,
-        zipCode: widget.property.zipCode,
-        loanAmount: widget.property.loanAmount,
-        amountOwed: widget.property.amountOwed,
-        arrears: widget.property.arrears,
-        contacts: widget.property.contacts,
-        documents: widget.property.documents,
-        judgments: widget.property.judgments,
-        notes: updatedNotes,
-        vesting: widget.property.vesting,
-        createdAt: widget.property.createdAt,
+        id: latestProperty.id,
+        fileNumber: latestProperty.fileNumber,
+        address: latestProperty.address,
+        city: latestProperty.city,
+        state: latestProperty.state,
+        zipCode: latestProperty.zipCode,
+        loanAmount: latestProperty.loanAmount,
+        amountOwed: latestProperty.amountOwed,
+        arrears: latestProperty.arrears,
+        zillowUrl: latestProperty.zillowUrl,
+        contacts: latestProperty.contacts, // From latest
+        documents: latestProperty.documents, // From latest
+        judgments: latestProperty.judgments, // From latest
+        notes: updatedNotes, // Updated notes
+        trustees: latestProperty.trustees, // CRITICAL: From latest
+        auctions: latestProperty.auctions, // From latest
+        vesting: latestProperty.vesting, // From latest
+        createdAt: latestProperty.createdAt,
         updatedAt: DateTime.now(),
       );
 
-      await context.read<PropertyProvider>().updateProperty(updatedProperty);
+      print('=== AFTER NOTE UPDATE (before save) ===');
+      print('Updated property trustees: ${updatedProperty.trustees.length}');
+      print('Updated property notes: ${updatedProperty.notes.length}');
+
+      await propertyProvider.updateProperty(updatedProperty);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -233,6 +256,35 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    // Month abbreviations
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    // Format date as "Aug 27, 2025"
+    final dateStr =
+        '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+
+    // Format time as "5:04pm"
+    final hour =
+        dateTime.hour == 0
+            ? 12
+            : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'pm' : 'am';
+    final timeStr = '$hour:$minute$period';
+
+    return '$dateStr $timeStr';
   }
 }

@@ -57,9 +57,7 @@ class NotesTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            DateFormat(
-                              'MMM d, yyyy h:mm a',
-                            ).format(note.createdAt),
+                            _formatDateTime(note.createdAt),
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 12,
@@ -75,7 +73,7 @@ class NotesTab extends StatelessWidget {
                           if (note.updatedAt != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Updated: ${DateFormat('MMM d, yyyy h:mm a').format(note.updatedAt!)}',
+                              'Updated: ${_formatDateTime(note.updatedAt!)}',
                               style: TextStyle(
                                 color: Colors.orange[600],
                                 fontSize: 10,
@@ -112,5 +110,35 @@ class NotesTab extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    final dateStr =
+        '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+
+    final hour =
+        dateTime.hour == 0
+            ? 12
+            : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'pm' : 'am';
+    final timeStr = '$hour:$minute$period';
+
+    return '$dateStr $timeStr';
   }
 }

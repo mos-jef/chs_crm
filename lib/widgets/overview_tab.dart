@@ -18,6 +18,8 @@ class OverviewTab extends StatelessWidget {
       children: [
         _buildPropertyInfoSection(),
         const SizedBox(height: 16),
+        _buildZillowSection(context), 
+        const SizedBox(height: 16),
         _buildFinancialInfoSection(),
         const SizedBox(height: 16),
         _buildContactsSection(),
@@ -192,44 +194,35 @@ class OverviewTab extends StatelessWidget {
   }
 
   Widget _buildZillowSection(BuildContext context) {
-    return _buildInfoCard(
-      'Zillow Property Link',
-      Icons.link,
-      property.zillowUrl == null || property.zillowUrl!.isEmpty
-          ? [const Text('No Zillow URL added')]
-          : [
-            InkWell(
-              onTap: () {
-                html.window.open(property.zillowUrl!, '_blank');
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  border: Border.all(color: Colors.blue[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.link, color: Colors.blue[700], size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        property.zillowUrl!,
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          decoration: TextDecoration.underline,
-                          fontWeight: FontWeight.w500,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return _buildInfoCard(
+          'Zillow Property Link',
+          Icons.link,
+          property.zillowUrl == null || property.zillowUrl!.isEmpty
+              ? [const Text('No Zillow URL added')]
+              : [
+                InkWell(
+                  onTap: () {
+                    html.window.open(property.zillowUrl!, '_blank');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Text(
+                      property.zillowUrl!,
+                      style: TextStyle(
+                        color: AppThemes.getTotalOwedColor(
+                          themeProvider.currentTheme,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        fontWeight: FontWeight.bold, // Bold as requested
+                        decoration: TextDecoration.underline,
                       ),
                     ),
-                    Icon(Icons.open_in_new, color: Colors.blue[700], size: 16),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+        );
+      },
     );
   }
 
@@ -432,14 +425,8 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildRecordInfoSection() {
     return _buildInfoCard('Record Information', Icons.info, [
-      _buildInfoRow(
-        'Created',
-        DateFormat('MMM d, yyyy h:mm a').format(property.createdAt),
-      ),
-      _buildInfoRow(
-        'Last Updated',
-        DateFormat('MMM d, yyyy h:mm a').format(property.updatedAt),
-      ),
+      _buildInfoRow('Created', _formatDateTime(property.createdAt)),
+      _buildInfoRow('Last Updated', _formatDateTime(property.updatedAt)),
     ]);
   }
 
@@ -529,8 +516,58 @@ class OverviewTab extends StatelessWidget {
         return Icons.gavel;
       case 'court documents':
         return Icons.balance;
+      case 'judgment': // ADD THESE
+        return Icons.gavel;
+      case 'foreclosure':
+        return Icons.warning;
+      case 'notice of default':
+        return Icons.error_outline;
+      case 'affidavit of mailing':
+        return Icons.mail_outline;
+      case 'deed of trust':
+        return Icons.account_balance_wallet;
+      case 'assignment deed of trust':
+        return Icons.assignment;
+      case 'assignment':
+        return Icons.assignment_turned_in;
+      case 'successor trustee':
+        return Icons.person_outline;
+      case 'trustees sale':
+        return Icons.storefront;
+      case 'sheriffs deed':
+        return Icons.local_police;
       default:
         return Icons.insert_drive_file;
     }
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    final dateStr =
+        '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+
+    final hour =
+        dateTime.hour == 0
+            ? 12
+            : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'pm' : 'am';
+    final timeStr = '$hour:$minute$period';
+
+    return '$dateStr $timeStr';
   }
 }

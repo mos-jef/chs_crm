@@ -21,6 +21,52 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
 
+  String? _getNextAuctionDate(PropertyFile property) {
+    if (property.auctions.isEmpty) return null;
+
+    // Find the next upcoming auction (not completed) or the most recent one
+    Auction? nextAuction;
+
+    // First try to find an upcoming auction
+    for (var auction in property.auctions) {
+      if (!auction.auctionCompleted) {
+        if (nextAuction == null ||
+            auction.auctionDate.isBefore(nextAuction.auctionDate)) {
+          nextAuction = auction;
+        }
+      }
+    }
+
+    // If no upcoming auctions, get the most recent completed one
+    if (nextAuction == null) {
+      for (var auction in property.auctions) {
+        if (nextAuction == null ||
+            auction.auctionDate.isAfter(nextAuction.auctionDate)) {
+          nextAuction = auction;
+        }
+      }
+    }
+
+    if (nextAuction == null) return null;
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[nextAuction.auctionDate.month - 1]} ${nextAuction.auctionDate.day}, ${nextAuction.auctionDate.year}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -286,10 +332,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                // ADD THIS NEW SALE DATE LINE:
+                                if (_getNextAuctionDate(property) != null)
+                                  Text(
+                                    'Sale Date: ${_getNextAuctionDate(property)}',
+                                    style: TextStyle(
+                                      color: AppThemes.getAmountOwedColor(
+                                        themeProvider.currentTheme,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                               ],
                             );
                           },
-                        ),
+                        ), 
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
                           Navigator.of(context).push(

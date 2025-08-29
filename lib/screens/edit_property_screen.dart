@@ -21,6 +21,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController _zipController;
   late TextEditingController _loanAmountController;
   late TextEditingController _amountOwedController;
+  late TextEditingController _arrearsController; 
 
   bool _isLoading = false;
 
@@ -40,6 +41,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _amountOwedController = TextEditingController(
       text: widget.property.amountOwed?.toString() ?? '',
     );
+    _arrearsController = TextEditingController(
+      text: widget.property.arrears?.toString() ?? '',
+    );
   }
 
   @override
@@ -51,6 +55,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _zipController.dispose();
     _loanAmountController.dispose();
     _amountOwedController.dispose();
+    _arrearsController.dispose();
     super.dispose();
   }
 
@@ -62,8 +67,18 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     });
 
     try {
+      // Get latest property data to avoid overwriting other fields
+      final propertyProvider = context.read<PropertyProvider>();
+      final latestProperty = propertyProvider.getPropertyById(
+        widget.property.id,
+      );
+
+      if (latestProperty == null) {
+        throw Exception('Property not found in cache');
+      }
+
       final updatedProperty = PropertyFile(
-        id: widget.property.id,
+        id: latestProperty.id,
         fileNumber: _fileNumberController.text.trim(),
         address: _addressController.text.trim(),
         city: _cityController.text.trim(),
@@ -77,19 +92,28 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
             _amountOwedController.text.isNotEmpty
                 ? double.tryParse(_amountOwedController.text)
                 : null,
-        contacts: widget.property.contacts,
-        documents: widget.property.documents,
-        vesting: widget.property.vesting,
-        createdAt: widget.property.createdAt,
+        arrears:
+            _arrearsController
+                    .text
+                    .isNotEmpty // ADD THIS BLOCK
+                ? double.tryParse(_arrearsController.text)
+                : null,
+        zillowUrl: latestProperty.zillowUrl, // From latest
+        contacts: latestProperty.contacts, // From latest
+        documents: latestProperty.documents, // From latest
+        judgments: latestProperty.judgments, // From latest
+        notes: latestProperty.notes, // From latest
+        trustees: latestProperty.trustees, // From latest
+        auctions: latestProperty.auctions, // From latest
+        vesting: latestProperty.vesting, // From latest
+        createdAt: latestProperty.createdAt,
         updatedAt: DateTime.now(),
       );
 
-      await context.read<PropertyProvider>().updateProperty(updatedProperty);
+      await propertyProvider.updateProperty(updatedProperty);
 
       if (mounted) {
-        Navigator.of(
-          context,
-        ).pop(true); // Return true to indicate changes were made
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Property updated successfully')),
         );
@@ -225,6 +249,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
+
             TextFormField(
               controller: _amountOwedController,
               decoration: const InputDecoration(
@@ -233,6 +258,30 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+
+            // ADD THIS NEW FIELD:
+            TextFormField(
+              controller: _arrearsController,
+              decoration: const InputDecoration(
+                labelText: 'Arrears',
+                prefixText: '\$',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value != null && value.isNotEmpty) {
+                  final number = double.tryParse(value);
+                  if (number == null) {
+                    return 'Please enter a valid number';
+                  }
+                  if (number < 0) {
+                    return 'Amount cannot be negative';
+                  }
+                }
+                return null;
+              },
             ),
           ],
         ),

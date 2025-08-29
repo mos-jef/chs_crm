@@ -60,8 +60,14 @@ class _AddContactScreenState extends State<AddContactScreen> {
         zipCode: widget.property.zipCode,
         loanAmount: widget.property.loanAmount,
         amountOwed: widget.property.amountOwed,
+        arrears: widget.property.arrears, // ADD THIS
+        zillowUrl: widget.property.zillowUrl, // ADD THIS
         contacts: [...widget.property.contacts, newContact],
         documents: widget.property.documents,
+        judgments: widget.property.judgments, // ADD THIS
+        notes: widget.property.notes, // ADD THIS
+        trustees: widget.property.trustees, // ADD THIS
+        auctions: widget.property.auctions, // ADD THIS
         vesting: widget.property.vesting,
         createdAt: widget.property.createdAt,
         updatedAt: DateTime.now(),

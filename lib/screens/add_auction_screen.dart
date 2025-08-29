@@ -165,7 +165,8 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
         zipCode: widget.property.zipCode,
         loanAmount: widget.property.loanAmount,
         amountOwed: widget.property.amountOwed,
-        arrears: widget.property.arrears,
+        arrears: widget.property.arrears, // ADD THIS
+        zillowUrl: widget.property.zillowUrl, // ADD THIS
         contacts: widget.property.contacts,
         documents: widget.property.documents,
         judgments: widget.property.judgments,

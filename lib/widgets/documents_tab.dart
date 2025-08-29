@@ -254,16 +254,11 @@ class DocumentsTab extends StatelessWidget {
           print('Document deleted from storage: ${document.url}');
         } catch (e) {
           print('Warning: Could not delete from storage: $e');
-          // Continue with database deletion even if storage fails
           storageDeleted = false;
         }
       }
 
-      // Remove from documents list
-      List<Document> updatedDocuments = List.from(property.documents);
-      updatedDocuments.removeAt(index);
-
-      // Create updated property
+      // CRITICAL FIX: Use the helper method for consistent updates
       final updatedProperty = PropertyFile(
         id: property.id,
         fileNumber: property.fileNumber,
@@ -273,9 +268,11 @@ class DocumentsTab extends StatelessWidget {
         zipCode: property.zipCode,
         loanAmount: property.loanAmount,
         amountOwed: property.amountOwed,
-        arrears: property.arrears,
+        arrears: property.arrears, // ✅ Already present
+        zillowUrl: property.zillowUrl, // ✅ Already present
         contacts: property.contacts,
-        documents: updatedDocuments,
+        documents: List.from(property.documents)
+          ..removeAt(index), // Safer removal
         judgments: property.judgments,
         notes: property.notes,
         trustees: property.trustees,
@@ -285,11 +282,10 @@ class DocumentsTab extends StatelessWidget {
         updatedAt: DateTime.now(),
       );
 
-      // Update Firestore
-      await context.read<PropertyProvider>().updateProperty(updatedProperty);
-
-      // Force refresh to ensure UI updates
-      await context.read<PropertyProvider>().loadProperties();
+      // Update Firestore using the safe method
+      await context.read<PropertyProvider>().updatePropertySafe(
+        updatedProperty,
+      );
 
       // Close loading dialog
       if (context.mounted) {

@@ -9,6 +9,7 @@ import '../widgets/notes_tab.dart';
 import '../widgets/trustees_tab.dart';
 import '../widgets/auctions_tab.dart';
 import '../widgets/vesting_tab.dart';
+import '../widgets/zillow_tab.dart'; // ADD THIS IMPORT
 import 'edit_property_screen.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 9,
+      length: 10, // CHANGE FROM 9 TO 10
       child: Scaffold(
         appBar: AppBar(
           title: Text('${_currentProperty.fileNumber}'),
@@ -61,6 +62,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             tabs: [
               Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
               Tab(icon: Icon(Icons.info), text: 'Property'),
+              Tab(icon: Icon(Icons.link), text: 'Zillow'), // ADD THIS TAB
               Tab(icon: Icon(Icons.contacts), text: 'Contacts'),
               Tab(icon: Icon(Icons.folder), text: 'Documents'),
               Tab(icon: Icon(Icons.gavel), text: 'Judgments'),
@@ -75,6 +77,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           children: [
             OverviewTab(property: _currentProperty),
             PropertyInfoTab(property: _currentProperty),
+            ZillowTab(property: _currentProperty), // ADD THIS TAB VIEW
             ContactsTab(property: _currentProperty),
             DocumentsTab(property: _currentProperty),
             JudgmentsTab(property: _currentProperty),

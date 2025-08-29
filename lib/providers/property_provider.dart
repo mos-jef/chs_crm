@@ -9,6 +9,89 @@ class PropertyProvider extends ChangeNotifier {
   String _searchQuery = '';
   Map<String, dynamic> _advancedSearchCriteria = {};
 
+  PropertyFile _createUpdatedProperty(
+    PropertyFile original, {
+    String? id,
+    String? fileNumber,
+    String? address,
+    String? city,
+    String? state,
+    String? zipCode,
+    double? loanAmount,
+    double? amountOwed,
+    double? arrears,
+    String? zillowUrl,
+    List<Contact>? contacts,
+    List<Document>? documents,
+    List<Judgment>? judgments,
+    List<Note>? notes,
+    List<Trustee>? trustees,
+    List<Auction>? auctions,
+    VestingInfo? vesting,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return PropertyFile(
+      id: id ?? original.id,
+      fileNumber: fileNumber ?? original.fileNumber,
+      address: address ?? original.address,
+      city: city ?? original.city,
+      state: state ?? original.state,
+      zipCode: zipCode ?? original.zipCode,
+      loanAmount: loanAmount ?? original.loanAmount,
+      amountOwed: amountOwed ?? original.amountOwed,
+      arrears: arrears ?? original.arrears,
+      zillowUrl: zillowUrl ?? original.zillowUrl,
+      contacts: contacts ?? original.contacts,
+      documents: documents ?? original.documents,
+      judgments: judgments ?? original.judgments,
+      notes: notes ?? original.notes,
+      trustees: trustees ?? original.trustees,
+      auctions: auctions ?? original.auctions,
+      vesting: vesting ?? original.vesting,
+      createdAt: createdAt ?? original.createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+    );
+  }
+
+  /// Enhanced update method with validation
+  Future<void> updatePropertySafe(PropertyFile property) async {
+    try {
+      // Validate that property has all required fields
+      if (property.id.isEmpty) {
+        throw Exception('Property ID cannot be empty');
+      }
+
+      if (!_validatePropertyFile(property)) {
+        throw Exception(
+          'PropertyFile validation failed - missing required fields',
+        );
+      }
+
+      await updateProperty(property);
+
+      // Force a refresh to ensure UI consistency
+      await refreshProperty(property.id);
+    } catch (e) {
+      print('Error in updatePropertySafe: $e');
+      // Force a complete reload if update fails
+      await loadProperties();
+      rethrow;
+    }
+  }
+
+  /// Validate PropertyFile completeness
+  bool _validatePropertyFile(PropertyFile property) {
+    if (property.id.isEmpty) return false;
+    if (property.fileNumber.isEmpty) return false;
+    if (property.address.isEmpty) return false;
+    if (property.city.isEmpty) return false;
+    if (property.state.isEmpty) return false;
+    if (property.zipCode.isEmpty) return false;
+    // Add more validations as needed
+    return true;
+  }
+
   List<PropertyFile> get properties {
     if (_searchQuery.isEmpty && _advancedSearchCriteria.isEmpty) {
       return _properties;
@@ -156,54 +239,126 @@ class PropertyProvider extends ChangeNotifier {
 
   Future<void> updateProperty(PropertyFile property) async {
     try {
-      print('=== UPDATING PROPERTY ===');
+      print('=== UPDATING PROPERTY (ENHANCED DEBUG) ===');
       print('Property ID: ${property.id}');
       print('Property: ${property.fileNumber}');
       print('Documents: ${property.documents.length}');
       print('Notes: ${property.notes.length}');
       print('Trustees: ${property.trustees.length}');
       print('Auctions: ${property.auctions.length}');
+      print('Judgments: ${property.judgments.length}');
+
+      // Detailed logging of what we're about to save
+      if (property.notes.isNotEmpty) {
+        print('NOTES BEING SAVED:');
+        for (var note in property.notes) {
+          print(
+            '  - "${note.subject}" (${note.id}) - Created: ${note.createdAt}',
+          );
+        }
+      }
+
+      if (property.trustees.isNotEmpty) {
+        print('TRUSTEES BEING SAVED:');
+        for (var trustee in property.trustees) {
+          print(
+            '  - "${trustee.name}" at ${trustee.institution} (${trustee.id})',
+          );
+        }
+      }
 
       final propertyData = property.toMap();
 
-      // Debug: Print what we're saving
-      print('Saving to Firestore:');
-      if (propertyData['documents'] != null) {
-        final docs = propertyData['documents'] as List;
-        print('  - ${docs.length} documents');
-        for (var doc in docs) {
-          print('    * ${doc['name']} (${doc['type']})');
-        }
-      }
-      if (propertyData['trustees'] != null) {
-        final trustees = propertyData['trustees'] as List;
-        print('  - ${trustees.length} trustees');
-        for (var trustee in trustees) {
-          print('    * ${trustee['name']} at ${trustee['institution']}');
-        }
-      }
+      // CRITICAL: Remove the id field from the data being sent to Firestore
+      // Firestore doesn't like when you try to update the document ID field
+      propertyData.remove('id');
 
+      print('=== FIRESTORE UPDATE STARTING ===');
       await _firestore
           .collection('properties')
           .doc(property.id)
           .update(propertyData);
+      print('=== FIRESTORE UPDATE COMPLETED ===');
 
-      // Update local state - CRITICAL FIX
+      // Update local state - ENHANCED VERSION
       final index = _properties.indexWhere((p) => p.id == property.id);
       if (index != -1) {
         _properties[index] = property;
-        print('Updated local property cache at index $index');
+        print('✅ Updated local property cache at index $index');
+
+        // Verify the update worked locally
+        print('LOCAL VERIFICATION:');
+        print('  - Notes in cache: ${_properties[index].notes.length}');
+        print('  - Trustees in cache: ${_properties[index].trustees.length}');
       } else {
-        print('WARNING: Could not find property in local cache!');
+        print('❌ WARNING: Could not find property in local cache!');
+        print('Available property IDs in cache:');
+        for (var p in _properties) {
+          print('  - ${p.id} (${p.fileNumber})');
+        }
+
         // Force reload if we can't find it locally
+        print('🔄 Force reloading all properties...');
         await loadProperties();
+        return; // Exit early since we reloaded everything
       }
 
+      // Force UI update
       notifyListeners();
-      print('Property updated successfully');
+      print('🔔 notifyListeners() called');
+
+      // Wait a bit then verify the data is actually in Firestore
+      await Future.delayed(Duration(seconds: 1));
+      await _verifyFirestoreData(property.id);
+
+      print('✅ Property updated successfully');
     } catch (e) {
-      print('Error updating property: $e');
+      print('❌ Error updating property: $e');
+      print('Stack trace: ${StackTrace.current}');
+
+      // Force reload on error
+      print('🔄 Force reloading due to error...');
+      await loadProperties();
       throw e;
+    }
+  }
+
+  // Add this new method to verify data was actually saved
+  Future<void> _verifyFirestoreData(String propertyId) async {
+    try {
+      print('=== VERIFYING FIRESTORE DATA ===');
+      final doc =
+          await _firestore.collection('properties').doc(propertyId).get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        final notes = data['notes'] as List<dynamic>? ?? [];
+        final trustees = data['trustees'] as List<dynamic>? ?? [];
+
+        print('📋 Firestore verification:');
+        print('  - Notes in Firestore: ${notes.length}');
+        print('  - Trustees in Firestore: ${trustees.length}');
+
+        if (notes.isNotEmpty) {
+          print('  Notes details:');
+          for (var note in notes) {
+            print('    * ${note['subject']} (${note['id']})');
+          }
+        }
+
+        if (trustees.isNotEmpty) {
+          print('  Trustees details:');
+          for (var trustee in trustees) {
+            print(
+              '    * ${trustee['name']} at ${trustee['institution']} (${trustee['id']})',
+            );
+          }
+        }
+      } else {
+        print('❌ Document not found in Firestore!');
+      }
+    } catch (e) {
+      print('❌ Error verifying Firestore data: $e');
     }
   }
 

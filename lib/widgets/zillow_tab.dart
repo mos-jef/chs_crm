@@ -1,8 +1,12 @@
+import 'dart:html' as html show window;
+
+import 'package:chs_crm/providers/theme_provider.dart';
+import 'package:chs_crm/utils/app_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/property_file.dart';
 import '../providers/property_provider.dart';
-import 'dart:html' as html show window;
 
 class ZillowTab extends StatefulWidget {
   final PropertyFile property;
@@ -222,7 +226,6 @@ class _ZillowTabState extends State<ZillowTab> {
             if (widget.property.zillowUrl != null &&
                 widget.property.zillowUrl!.isNotEmpty)
               Card(
-                color: Colors.green[50],
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -245,46 +248,28 @@ class _ZillowTabState extends State<ZillowTab> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap:
-                            () => html.window.open(
-                              widget.property.zillowUrl!,
-                              '_blank',
-                            ),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.green[300]!),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.link,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
+                      const SizedBox(height: 12),
+                      Consumer<ThemeProvider>(
+                        builder: (context, themeProvider, child) {
+                          return InkWell(
+                            onTap:
+                                () => html.window.open(
                                   widget.property.zillowUrl!,
-                                  style: const TextStyle(
-                                    color: Colors.blue,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                                  '_blank',
                                 ),
+                            child: Text(
+                              widget.property.zillowUrl!,
+                              style: TextStyle(
+                                color: AppThemes.getTotalOwedColor(
+                                  themeProvider.currentTheme,
+                                ),
+                                fontWeight:
+                                    FontWeight.bold, // Bold as requested
+                                decoration: TextDecoration.underline,
                               ),
-                              const Icon(
-                                Icons.open_in_new,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
