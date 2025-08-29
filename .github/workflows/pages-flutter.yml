@@ -1,8 +1,8 @@
-name: Deploy static site to GitHub Pages
+name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -21,39 +21,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # If you need Node to build (React/Vite/etc). Remove if plain HTML.
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          node-version: '20'
+          channel: "stable"
+          cache: true
 
-      - name: Install
-        run: |
-          if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
+      - name: Flutter version
+        run: flutter --version
 
-      - name: Build
-        run: |
-          if [ -f package.json ]; then npm run build; fi
+      - name: Fetch packages
+        run: flutter pub get
 
-      # Adjust this to your actual build output folder (e.g., dist, out, build)
-      - name: Resolve output path
-        id: outdir
-        run: |
-          if [ -d "dist" ]; then echo "out=dist" >> $GITHUB_OUTPUT; \
-          elif [ -d "build" ]; then echo "out=build" >> $GITHUB_OUTPUT; \
-          elif [ -d "out" ]; then echo "out=out" >> $GITHUB_OUTPUT; \
-          else echo "out=." >> $GITHUB_OUTPUT; fi
+      # Custom domain serves at '/', so keep <base href="/"> in web/index.html
+      - name: Build Flutter Web
+        run: flutter build web --release
 
-      # SPA fallback (safe even if not needed)
-      - name: Add SPA 404 fallback if index.html exists
+      # SPA fallback for deep links
+      - name: Add SPA 404 fallback
+        run: cp build/web/index.html build/web/404.html
+
+      # Ensure Pages serves files as-is (no Jekyll processing)
+      - name: Disable Jekyll
+        run: touch build/web/.nojekyll
+
+      # Sanity check – make sure index.html is present in the artifact root
+      - name: List build output (debug)
         run: |
-          if [ -f "${{ steps.outdir.outputs.out }}/index.html" ]; then \
-          cp "${{ steps.outdir.outputs.out }}/index.html" "${{ steps.outdir.outputs.out }}/404.html"; fi
+          echo "Listing build/web:"
+          ls -la build/web
+          test -f build/web/index.html && echo "index.html present ✅" || (echo "index.html missing ❌" && exit 1)
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ steps.outdir.outputs.out }}
+          path: "build/web"
 
   deploy:
     environment:
