@@ -1,9 +1,13 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
 import '../models/property_file.dart';
 import '../services/file_number_service.dart';
 import '../utils/validators.dart';
+
+// Import the enum separately to ensure it's available
+// (This is already included in the custom_beam_button.dart import above)
 
 class AddPropertyScreen extends StatefulWidget {
   const AddPropertyScreen({super.key});
@@ -46,13 +50,17 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   Future<void> _loadPreviewFileNumber() async {
     try {
       final fileNumber = await FileNumberService.getNextFileNumber();
-      setState(() {
-        _previewFileNumber = fileNumber;
-      });
+      if (mounted) {
+        setState(() {
+          _previewFileNumber = fileNumber;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading file number preview: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading file number preview: $e')),
+        );
+      }
     }
   }
 
@@ -101,9 +109,11 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       }
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _cancelAdd() {
@@ -117,16 +127,27 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             'Are you sure you want to cancel? All entered information will be lost.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Continue Editing'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Close add property screen
-              },
-              child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Continue',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Discard',
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pop(); // Close add property screen
+                  },
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
             ),
           ],
         );
@@ -141,29 +162,9 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         title: const Text('Add Property'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        actions: [
-          TextButton(
-            onPressed: _cancelAdd,
-            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-          ),
-          TextButton(
-            onPressed: _isLoading ? null : _saveProperty,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -215,8 +216,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 labelText: 'Address *',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) => Validators.validateRequired(value, 'an address'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'an address'),
             ),
             const SizedBox(height: 16),
 
@@ -230,8 +231,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                       labelText: 'City *',
                       border: OutlineInputBorder(),
                     ),
-                    validator:
-                        (value) => Validators.validateRequired(value, 'a city'),
+                    validator: (value) =>
+                        Validators.validateRequired(value, 'a city'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -242,9 +243,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                       labelText: 'State *',
                       border: OutlineInputBorder(),
                     ),
-                    validator:
-                        (value) =>
-                            Validators.validateRequired(value, 'a state'),
+                    validator: (value) =>
+                        Validators.validateRequired(value, 'a state'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -255,9 +255,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                       labelText: 'ZIP *',
                       border: OutlineInputBorder(),
                     ),
-                    validator:
-                        (value) =>
-                            Validators.validateRequired(value, 'a ZIP code'),
+                    validator: (value) =>
+                        Validators.validateRequired(value, 'a ZIP code'),
                   ),
                 ),
               ],
@@ -298,6 +297,32 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               keyboardType: TextInputType.number,
               validator: Validators.validateAmount,
             ),
+
+            const SizedBox(height: 32),
+
+            // Action buttons at bottom center
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: _cancelAdd,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Save',
+                  onPressed: _isLoading ? null : _saveProperty,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16), // Bottom padding
           ],
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -136,22 +137,6 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Edit File #${widget.property.fileNumber}'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveChanges,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -283,6 +268,30 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 return null;
               },
             ),
+            const SizedBox(height: 32),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Save',
+                  onPressed: _isLoading ? null : _saveChanges,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),

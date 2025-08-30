@@ -1,3 +1,4 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -99,22 +100,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Contact'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveContact,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -167,6 +152,30 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               keyboardType: TextInputType.emailAddress,
             ),
+
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Save',
+                  onPressed: _isLoading ? null : _saveContact,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
           ],
         ),
       ),

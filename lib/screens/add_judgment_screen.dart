@@ -1,3 +1,4 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -187,22 +188,6 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
           onPressed:
               () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveJudgment,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -361,6 +346,29 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
               keyboardType: TextInputType.number,
               validator: Validators.validateAmount,
             ),
+
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Save',
+                  onPressed: _isLoading ? null : _saveJudgment,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

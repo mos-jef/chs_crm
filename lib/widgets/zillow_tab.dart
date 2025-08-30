@@ -276,41 +276,6 @@ class _ZillowTabState extends State<ZillowTab> {
                   ),
                 ),
               ),
-
-            // Help Section
-            const SizedBox(height: 24),
-            Card(
-              color: Colors.blue[50],
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info, color: Colors.blue[700], size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'How to find Zillow URL',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '1. Go to Zillow.com\n'
-                      '2. Search for the property address\n'
-                      '3. Copy the URL from your browser address bar\n'
-                      '4. Paste it in the field above',
-                      style: TextStyle(color: Colors.blue[700], fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

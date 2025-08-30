@@ -1,3 +1,4 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -217,29 +218,6 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
           onPressed:
               () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-          ),
-          TextButton(
-            onPressed: _isLoading ? null : _saveAuction,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : Text(
-                      _isEditing ? 'Update' : 'Save',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -334,6 +312,31 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
                 keyboardType: TextInputType.number,
                 validator: Validators.validateAmount,
               ),
+
+            const SizedBox(height: 32),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: _isEditing ? 'Update' : 'Save',
+                  onPressed: _isLoading ? null : _saveAuction,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -522,29 +523,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
           onPressed:
               () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-          ),
-          TextButton(
-            onPressed: _isLoading ? null : _saveDocument,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : Text(
-                      _isEditing ? 'Update' : 'Save',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -701,83 +679,31 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
               ),
             ),
 
-            // Troubleshooting Section
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                border: Border.all(color: Colors.orange[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info, size: 16, color: Colors.orange[700]),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Upload Tips & Troubleshooting',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• Keep file sizes under 5MB for best results\n'
-                    '• Ensure stable internet connection\n'
-                    '• Try again if upload fails - timeout reduced to 1 minute\n'
-                    '• Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT\n'
-                    '• Try uploading a smaller test file first',
-                    style: TextStyle(fontSize: 12, color: Colors.orange[700]),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              _isLoading ? null : _testFirebaseConnection,
-                          icon: const Icon(Icons.network_check),
-                          label: const Text('Test Connection'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange[700],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _runQuickStorageTest,
-                          icon: const Icon(Icons.bug_report),
-                          label: const Text('Debug Storage'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[700],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _debugFirestoreDocuments,
-                    icon: const Icon(Icons.storage),
-                    label: const Text('Debug Firestore Documents'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple[700],
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 32),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: _isEditing ? 'Update' : 'Save',
+                  onPressed: _isLoading ? null : _saveDocument,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
             ),
+
+            const SizedBox(height: 16),
+            
           ],
         ),
       ),

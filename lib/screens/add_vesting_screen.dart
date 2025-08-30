@@ -1,3 +1,4 @@
+import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -130,22 +131,6 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vesting Information'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveVesting,
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -274,8 +259,8 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
               decoration: BoxDecoration(
                 color:
                     _totalPercentage == 100.0
-                        ? Colors.green[50]
-                        : Colors.red[50],
+                        ? Colors.green[0]
+                        : Colors.red[0],
                 border: Border.all(
                   color: _totalPercentage == 100.0 ? Colors.green : Colors.red,
                 ),
@@ -301,6 +286,28 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomBeamButton(
+                  text: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(),
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.secondary,
+                ),
+                CustomBeamButton(
+                  text: 'Save',
+                  onPressed: _isLoading ? null : _saveVesting,
+                  isLoading: _isLoading,
+                  width: 100,
+                  height: 60,
+                  buttonStyle: CustomButtonStyle.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
