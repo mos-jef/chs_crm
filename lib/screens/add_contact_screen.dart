@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 
 class AddContactScreen extends StatefulWidget {
   final PropertyFile property;
@@ -41,14 +42,12 @@ class _AddContactScreenState extends State<AddContactScreen> {
     try {
       final newContact = Contact(
         name: _nameController.text.trim(),
-        phone:
-            _phoneController.text.trim().isNotEmpty
-                ? _phoneController.text.trim()
-                : null,
-        email:
-            _emailController.text.trim().isNotEmpty
-                ? _emailController.text.trim()
-                : null,
+        phone: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
+        email: _emailController.text.trim().isNotEmpty
+            ? _emailController.text.trim()
+            : null,
         role: _roleController.text.trim(),
       );
 
@@ -152,7 +151,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               keyboardType: TextInputType.emailAddress,
             ),
-
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -161,7 +159,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -169,13 +167,12 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   onPressed: _isLoading ? null : _saveContact,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
           ],
         ),
       ),

@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../utils/validators.dart';
 
 class AddAuctionScreen extends StatefulWidget {
@@ -126,10 +127,9 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
           time: _selectedTime!,
           openingBid: Validators.parseAmount(_openingBidController.text),
           auctionCompleted: _auctionCompleted,
-          salesAmount:
-              _auctionCompleted
-                  ? Validators.parseAmount(_salesAmountController.text)
-                  : null,
+          salesAmount: _auctionCompleted
+              ? Validators.parseAmount(_salesAmountController.text)
+              : null,
           createdAt: widget.existingAuction!.createdAt,
           updatedAt: DateTime.now(),
         );
@@ -148,10 +148,9 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
           time: _selectedTime!,
           openingBid: Validators.parseAmount(_openingBidController.text),
           auctionCompleted: _auctionCompleted,
-          salesAmount:
-              _auctionCompleted
-                  ? Validators.parseAmount(_salesAmountController.text)
-                  : null,
+          salesAmount: _auctionCompleted
+              ? Validators.parseAmount(_salesAmountController.text)
+              : null,
           createdAt: DateTime.now(),
         );
         updatedAuctions.add(newAuction);
@@ -215,8 +214,8 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
         title: Text(_isEditing ? 'Edit Auction' : 'Add Auction'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
       ),
       body: Form(
@@ -264,7 +263,6 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _placeController,
               decoration: const InputDecoration(
@@ -272,11 +270,10 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
               ),
-              validator:
-                  (value) => Validators.validateRequired(value, 'a place'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a place'),
             ),
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _openingBidController,
               decoration: const InputDecoration(
@@ -288,7 +285,6 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
               validator: Validators.validateAmount,
             ),
             const SizedBox(height: 16),
-
             CheckboxListTile(
               title: const Text('Auction Completed'),
               value: _auctionCompleted,
@@ -300,7 +296,6 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
               controlAffinity: ListTileControlAffinity.leading,
             ),
             const SizedBox(height: 16),
-
             if (_auctionCompleted)
               TextFormField(
                 controller: _salesAmountController,
@@ -312,9 +307,7 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
                 keyboardType: TextInputType.number,
                 validator: Validators.validateAmount,
               ),
-
             const SizedBox(height: 32),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -322,7 +315,7 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -330,13 +323,12 @@ class _AddAuctionScreenState extends State<AddAuctionScreen> {
                   onPressed: _isLoading ? null : _saveAuction,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
           ],
         ),
       ),

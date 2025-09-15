@@ -1,12 +1,14 @@
 import 'dart:typed_data';
+
 import 'package:chs_crm/widgets/custom_beam_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../services/document_service.dart';
 import '../utils/validators.dart';
 
@@ -23,8 +25,8 @@ class QuickDebug {
       final testString = 'Hello Firebase Storage Debug Test';
       final testData = Uint8List.fromList(testString.codeUnits);
       final ref = storage.ref().child(
-        'debug_test/test_${DateTime.now().millisecondsSinceEpoch}.txt',
-      );
+            'debug_test/test_${DateTime.now().millisecondsSinceEpoch}.txt',
+          );
 
       print('Uploading test data to: ${ref.fullPath}');
       print('Test data size: ${testData.length} bytes');
@@ -145,11 +147,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     try {
       // Test Firestore connection
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      await firestore
-          .collection('test')
-          .doc('connection-test')
-          .get()
-          .timeout(
+      await firestore.collection('test').doc('connection-test').get().timeout(
             const Duration(seconds: 10),
             onTimeout: () => throw Exception('Firestore timeout'),
           );
@@ -163,11 +161,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       // Test Firebase Storage connection
       final FirebaseStorage storage = FirebaseStorage.instance;
       try {
-        await storage
-            .ref()
-            .child('test-connection')
-            .getMetadata()
-            .timeout(
+        await storage.ref().child('test-connection').getMetadata().timeout(
               const Duration(seconds: 10),
               onTimeout: () => throw Exception('Storage timeout'),
             );
@@ -229,11 +223,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     try {
       // Check what's actually stored in Firestore for this property
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      final doc =
-          await firestore
-              .collection('properties')
-              .doc(widget.property.id)
-              .get();
+      final doc = await firestore
+          .collection('properties')
+          .doc(widget.property.id)
+          .get();
 
       if (doc.exists) {
         final data = doc.data()!;
@@ -520,8 +513,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
         title: Text(_isEditing ? 'Edit Document' : 'Add Document'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
       ),
       body: Form(
@@ -535,9 +528,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                 labelText: 'Document Name *',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) =>
-                      Validators.validateRequired(value, 'a document name'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a document name'),
             ),
             const SizedBox(height: 16),
 
@@ -547,10 +539,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                 labelText: 'Document Type *',
                 border: OutlineInputBorder(),
               ),
-              items:
-                  _documentTypes.map((type) {
-                    return DropdownMenuItem(value: type, child: Text(type));
-                  }).toList(),
+              items: _documentTypes.map((type) {
+                return DropdownMenuItem(value: type, child: Text(type));
+              }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedType = value!;
@@ -628,17 +619,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color:
-                            _uploadStatus.contains('Error')
-                                ? Colors.red[50]
-                                : _uploadStatus.contains('successfully')
+                        color: _uploadStatus.contains('Error')
+                            ? Colors.red[50]
+                            : _uploadStatus.contains('successfully')
                                 ? Colors.green[50]
                                 : Colors.blue[50],
                         border: Border.all(
-                          color:
-                              _uploadStatus.contains('Error')
-                                  ? Colors.red[300]!
-                                  : _uploadStatus.contains('successfully')
+                          color: _uploadStatus.contains('Error')
+                              ? Colors.red[300]!
+                              : _uploadStatus.contains('successfully')
                                   ? Colors.green[300]!
                                   : Colors.blue[300]!,
                         ),
@@ -662,10 +651,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                               _uploadStatus,
                               style: TextStyle(
                                 fontSize: 14,
-                                color:
-                                    _uploadStatus.contains('Error')
-                                        ? Colors.red[700]
-                                        : _uploadStatus.contains('successfully')
+                                color: _uploadStatus.contains('Error')
+                                    ? Colors.red[700]
+                                    : _uploadStatus.contains('successfully')
                                         ? Colors.green[700]
                                         : Colors.blue[700],
                               ),
@@ -688,7 +676,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -696,14 +684,13 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                   onPressed: _isLoading ? null : _saveDocument,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
-            
           ],
         ),
       ),

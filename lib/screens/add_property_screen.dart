@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../services/file_number_service.dart';
 import '../utils/validators.dart';
 
@@ -134,7 +135,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                   text: 'Continue',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -144,7 +145,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                     Navigator.of(context).pop(); // Close add property screen
                   },
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
@@ -308,7 +309,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                   text: 'Cancel',
                   onPressed: _cancelAdd,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -316,7 +317,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                   onPressed: _isLoading ? null : _saveProperty,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],

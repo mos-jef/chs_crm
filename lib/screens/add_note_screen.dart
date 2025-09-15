@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../utils/validators.dart';
 
 class AddNoteScreen extends StatefulWidget {
@@ -49,7 +50,9 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     try {
       // CRITICAL FIX: Get the latest property data before updating
       final propertyProvider = context.read<PropertyProvider>();
-      final latestProperty = propertyProvider.getPropertyById(widget.property.id,);
+      final latestProperty = propertyProvider.getPropertyById(
+        widget.property.id,
+      );
 
       if (latestProperty == null) {
         throw Exception('Property not found in cache');
@@ -158,8 +161,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
         title: Text(_isEditing ? 'Edit Note' : 'Add Note'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
       ),
       body: Form(
@@ -203,8 +206,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.subject),
                 ),
-                validator:
-                    (value) => Validators.validateRequired(value, 'a subject'),
+                validator: (value) =>
+                    Validators.validateRequired(value, 'a subject'),
                 maxLength: 100,
               ),
               const SizedBox(height: 16),
@@ -218,9 +221,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     border: OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
-                  validator:
-                      (value) =>
-                          Validators.validateRequired(value, 'note content'),
+                  validator: (value) =>
+                      Validators.validateRequired(value, 'note content'),
                   maxLines: null,
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
@@ -236,7 +238,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     text: 'Cancel',
                     onPressed: () => Navigator.of(context).pop(),
                     width: 100,
-                    height: 60,
+                    height: 45,
                     buttonStyle: CustomButtonStyle.secondary,
                   ),
                   CustomBeamButton(
@@ -244,7 +246,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     onPressed: _isLoading ? null : _saveNote,
                     isLoading: _isLoading,
                     width: 100,
-                    height: 60,
+                    height: 45,
                     buttonStyle: CustomButtonStyle.primary,
                   ),
                 ],
@@ -278,10 +280,9 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
         '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
 
     // Format time as "5:04pm"
-    final hour =
-        dateTime.hour == 0
-            ? 12
-            : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final hour = dateTime.hour == 0
+        ? 12
+        : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'pm' : 'am';
     final timeStr = '$hour:$minute$period';

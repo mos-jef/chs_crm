@@ -2,12 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import 'border_beam.dart';
+import '../config/button_theme_config.dart'; // Import the config
 
 enum CustomButtonStyle {
-  primary,   // Uses primary color for background, surface color for text
-  secondary, // Uses secondary color for background, surface color for text
-  custom,    // Uses default theme-responsive colors (original behavior)
+  primary,
+  secondary,
+  custom,
 }
 
 class CustomBeamButton extends StatefulWidget {
@@ -18,37 +18,126 @@ class CustomBeamButton extends StatefulWidget {
   final double? height;
   final CustomButtonStyle buttonStyle;
 
+  // 🎯 These now default to global config values
+  final double? borderRadius;
+  final Duration? animationDuration;
+  final Duration? pressAnimationDuration;
+  final double? scaleOnPress;
+  final double? hoverOpacity;
+  final bool? enableShadows;
+  final double? shadowBlurRadius;
+  final double? shadowSpreadRadius;
+  final Offset? shadowOffset;
+  final double? pressedShadowBlurRadius;
+  final Offset? pressedShadowOffset;
+  final double? borderWidth;
+
   const CustomBeamButton({
     super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
     this.width,
-    this.height = 48.0,
+    this.height,
     this.buttonStyle = CustomButtonStyle.primary,
+
+    // 🎯 All these now pull from global config if not specified
+    this.borderRadius, // Uses ButtonThemeConfig.globalBorderRadius if null
+    this.animationDuration, // Uses ButtonThemeConfig.globalAnimationDuration if null
+    this.pressAnimationDuration, // Uses ButtonThemeConfig.globalPressAnimationDuration if null
+    this.scaleOnPress, // Uses ButtonThemeConfig.globalScaleOnPress if null
+    this.hoverOpacity, // Uses ButtonThemeConfig.globalHoverOpacity if null
+    this.enableShadows, // Uses config based on button style if null
+    this.shadowBlurRadius, // Uses config based on button style if null
+    this.shadowSpreadRadius, // Uses config based on button style if null
+    this.shadowOffset, // Uses config based on button style if null
+    this.pressedShadowBlurRadius, // Uses config based on button style if null
+    this.pressedShadowOffset, // Uses config based on button style if null
+    this.borderWidth, // Uses ButtonThemeConfig.secondaryBorderWidth if null
   });
 
   @override
   State<CustomBeamButton> createState() => _CustomBeamButtonState();
 }
 
-class _CustomBeamButtonState extends State<CustomBeamButton> 
+class _CustomBeamButtonState extends State<CustomBeamButton>
     with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isPressed = false;
   late AnimationController _pressController;
   late Animation<double> _scaleAnimation;
 
+  // 🎯 Get effective values (widget override or global config)
+  double get effectiveWidth => widget.width ?? ButtonThemeConfig.defaultWidth;
+  double get effectiveHeight =>
+      widget.height ?? ButtonThemeConfig.defaultHeight;
+  double get effectiveBorderRadius =>
+      widget.borderRadius ?? ButtonThemeConfig.globalBorderRadius;
+  Duration get effectiveAnimationDuration =>
+      widget.animationDuration ?? ButtonThemeConfig.globalAnimationDuration;
+  Duration get effectivePressAnimationDuration =>
+      widget.pressAnimationDuration ??
+      ButtonThemeConfig.globalPressAnimationDuration;
+  double get effectiveScaleOnPress =>
+      widget.scaleOnPress ?? ButtonThemeConfig.globalScaleOnPress;
+  double get effectiveHoverOpacity =>
+      widget.hoverOpacity ?? ButtonThemeConfig.globalHoverOpacity;
+  double get effectiveBorderWidth =>
+      widget.borderWidth ?? ButtonThemeConfig.secondaryBorderWidth;
+
+  bool get effectiveEnableShadows {
+    if (widget.enableShadows != null) return widget.enableShadows!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryEnableShadows
+        : ButtonThemeConfig.secondaryEnableShadows;
+  }
+
+  double get effectiveShadowBlurRadius {
+    if (widget.shadowBlurRadius != null) return widget.shadowBlurRadius!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryShadowBlurRadius
+        : ButtonThemeConfig.secondaryShadowBlurRadius;
+  }
+
+  double get effectiveShadowSpreadRadius {
+    if (widget.shadowSpreadRadius != null) return widget.shadowSpreadRadius!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryShadowSpreadRadius
+        : ButtonThemeConfig.secondaryShadowSpreadRadius;
+  }
+
+  Offset get effectiveShadowOffset {
+    if (widget.shadowOffset != null) return widget.shadowOffset!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryShadowOffset
+        : ButtonThemeConfig.secondaryShadowOffset;
+  }
+
+  double get effectivePressedShadowBlurRadius {
+    if (widget.pressedShadowBlurRadius != null)
+      return widget.pressedShadowBlurRadius!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryPressedShadowBlurRadius
+        : ButtonThemeConfig.secondaryPressedShadowBlurRadius;
+  }
+
+  Offset get effectivePressedShadowOffset {
+    if (widget.pressedShadowOffset != null) return widget.pressedShadowOffset!;
+    return widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.primaryPressedShadowOffset
+        : ButtonThemeConfig.secondaryPressedShadowOffset;
+  }
+
   @override
   void initState() {
     super.initState();
     _pressController = AnimationController(
-      duration: const Duration(milliseconds: 100),
+      duration: effectivePressAnimationDuration,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.95,
+      end: effectiveScaleOnPress,
     ).animate(CurvedAnimation(
       parent: _pressController,
       curve: Curves.easeInOut,
@@ -63,18 +152,14 @@ class _CustomBeamButtonState extends State<CustomBeamButton>
 
   void _handleTapDown(TapDownDetails details) {
     if (widget.onPressed != null && !widget.isLoading) {
-      setState(() {
-        _isPressed = true;
-      });
+      setState(() => _isPressed = true);
       _pressController.forward();
     }
   }
 
   void _handleTapUp(TapUpDetails details) {
     if (_isPressed) {
-      setState(() {
-        _isPressed = false;
-      });
+      setState(() => _isPressed = false);
       _pressController.reverse();
       if (widget.onPressed != null && !widget.isLoading) {
         widget.onPressed!();
@@ -84,243 +169,153 @@ class _CustomBeamButtonState extends State<CustomBeamButton>
 
   void _handleTapCancel() {
     if (_isPressed) {
-      setState(() {
-        _isPressed = false;
-      });
+      setState(() => _isPressed = false);
       _pressController.reverse();
     }
+  }
+
+  List<BoxShadow> _generateShadows(ThemeProvider themeProvider) {
+    if (!effectiveEnableShadows) return [];
+
+    final shadowColor = widget.buttonStyle == CustomButtonStyle.primary
+        ? ButtonThemeConfig.getPrimaryShadowColor(
+            themeProvider.isAthleteTheme, themeProvider.isDarkMode)
+        : ButtonThemeConfig.getSecondaryShadowColor(
+            themeProvider.isAthleteTheme, themeProvider.isDarkMode);
+
+    return [
+      BoxShadow(
+        color: shadowColor.withOpacity(_isPressed ? 0.6 : 0.8),
+        offset:
+            _isPressed ? effectivePressedShadowOffset : effectiveShadowOffset,
+        blurRadius: _isPressed
+            ? effectivePressedShadowBlurRadius
+            : effectiveShadowBlurRadius,
+        spreadRadius: _isPressed ? 0 : effectiveShadowSpreadRadius,
+      ),
+      BoxShadow(
+        color: Colors.black.withOpacity(_isPressed ? 0.15 : 0.3),
+        offset: _isPressed ? const Offset(0, 1) : const Offset(0, 3),
+        blurRadius: _isPressed ? 3 : 6,
+        spreadRadius: 0,
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        // Get theme-responsive colors
-        final isDark = themeProvider.isDarkMode;
-        final isAthlete = themeProvider.isAthleteTheme;
-        
-        // Define colors based on theme and button style
-        Color beamColorFrom;
-        Color beamColorTo;
-        Color staticBorderColor;
+        final primaryColor = Theme.of(context).colorScheme.primary;
+        final surfaceColor = Theme.of(context).colorScheme.surface;
+        final scaffoldBackground = Theme.of(context).scaffoldBackgroundColor;
+
         Color backgroundColor;
         Color textColor;
-        
-        // Get theme colors from the current context
-        final primaryColor = Theme.of(context).colorScheme.primary;
-        final secondaryColor = Theme.of(context).colorScheme.secondary;
-        final surfaceColor = Theme.of(context).colorScheme.surface;
-        
-        // Set colors based on button style
+        Color borderColor;
+
         switch (widget.buttonStyle) {
           case CustomButtonStyle.primary:
-            backgroundColor =
-                primaryColor; // keep the fill from your ColorScheme
+            backgroundColor = primaryColor;
             textColor = surfaceColor;
-
-            // default (fallback) – in case no theme check matches
-            beamColorFrom = primaryColor.withAlpha(204);
-            beamColorTo = primaryColor;
-            staticBorderColor = primaryColor.withAlpha(0);
-
-            // 🔶 ATHLETE — LIGHT: red-orange -> purple
-            if (themeProvider.isAthleteTheme && !themeProvider.isDarkMode) {
-              // Primary: #CB3920, Accent Purple: #881593
-              beamColorFrom = const Color(0xFFCB3920); // red-orange
-              beamColorTo = const Color(0xFF881593); // purple
-              staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
-            }
-            // 🔶 ATHLETE — DARK: peach -> purple
-            else if (themeProvider.isAthleteTheme && themeProvider.isDarkMode) {
-              // Primary: #FE8019 (orange), Accent Purple: #881593
-              beamColorFrom = const Color(0xFFF5BC74); // peach
-              beamColorTo = const Color(0xFF881593); // purple
-              staticBorderColor = const Color(0xFF555555).withAlpha(0);
-            }
-            // 🟩 NINJA — LIGHT: teal -> deep orange
-            else if (themeProvider.isNinjaTheme && !themeProvider.isDarkMode) {
-              // Primary: #046252 (teal), Secondary: #C74600 (deep orange)
-              beamColorFrom = const Color(0xFF046252); // teal
-              beamColorTo = const Color(0xFFC74600); // deep orange
-              staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
-            }
-            // 🟩 NINJA — DARK: lime -> peach
-            else if (themeProvider.isNinjaTheme && themeProvider.isDarkMode) {
-              // Primary: #D8FA69 (lime), Secondary-ish accent: #F5BC74 (peach)
-              beamColorFrom = const Color(0xFFD8FA69); // lime
-              beamColorTo = const Color(0xFF881593); // purple
-              staticBorderColor = const Color(0xFF555555).withAlpha(0);
-            }
-
+            borderColor = Colors.transparent;
             break;
-
-          // CANCEL BUTTONS
-            
           case CustomButtonStyle.secondary:
-            // Button fill stays your theme secondary color
-            final cs = Theme.of(context).colorScheme;
-            backgroundColor = cs.secondary;
-            // Better contrast token than 'surface' for buttons:
-            textColor = cs.onSecondary;
-
-            // Fallback (in case no theme check matches)
-            beamColorFrom = backgroundColor.withAlpha(204);
-            beamColorTo = backgroundColor;
-            staticBorderColor = backgroundColor.withAlpha(76);
-
-            // 🔶 ATHLETE — LIGHT (secondary is Purple): purple -> red-orange
-            if (themeProvider.isAthleteTheme && !themeProvider.isDarkMode) {
-              // Purple: #881593, Red-Orange: #CB3920
-              beamColorFrom = const Color(0xFF881593); // purple head
-              beamColorTo = const Color(0xFFCB3920); // red-orange core
-              staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
-            }
-            // 🔶 ATHLETE — DARK (secondary is desaturated teal): teal-gray -> orange
-            else if (themeProvider.isAthleteTheme && themeProvider.isDarkMode) {
-              // Secondary: #6A8F8A (teal-gray), Accent: #FE8019 (orange)
-              beamColorFrom = const Color(0xFF6A8F8A); // teal-gray head
-              beamColorTo = const Color(0xFFFE8019); // orange core
-              staticBorderColor = const Color(0xFF555555).withAlpha(0);
-            }
-            // 🟩 NINJA — LIGHT (secondary is Deep Orange): deep orange -> teal
-            else if (themeProvider.isNinjaTheme && !themeProvider.isDarkMode) {
-              // Secondary: #C74600 (deep orange), Accent: #046252 (teal)
-              beamColorFrom = const Color(0xFFC74600); // deep orange head
-              beamColorTo = const Color(0xFF046252); // teal core
-              staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
-            }
-            // 🟩 NINJA — DARK (secondary is Peach): peach -> lime
-            else if (themeProvider.isNinjaTheme && themeProvider.isDarkMode) {
-              // Secondary: #F5BC74 (peach), Accent: #D8FA69 (lime)
-              beamColorFrom = const Color(0xFFF5BC74); // peach head
-              beamColorTo = const Color(0xFFD8FA69); // lime core
-              staticBorderColor = const Color(0xFF555555).withAlpha(0);
-            }
-
+            backgroundColor =
+                scaffoldBackground; // 🎯 This fixes the shadow issue!
+            textColor = primaryColor;
+            borderColor = primaryColor;
             break;
-
-            
           case CustomButtonStyle.custom:
-            // Original theme-responsive behavior
-            if (isAthlete) {
-              if (isDark) {
-                beamColorFrom = const Color(0xFFFE8019);
-                beamColorTo = const Color(0xFFCB3920);
-                staticBorderColor = const Color(0xFF555555).withAlpha(0);
+            if (themeProvider.isAthleteTheme) {
+              if (themeProvider.isDarkMode) {
                 backgroundColor = const Color(0xFF373737);
                 textColor = Colors.white;
               } else {
-                beamColorFrom = const Color(0xFFCB3920);
-                beamColorTo = const Color(0xFF881593);
-                staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
                 backgroundColor = const Color(0xFFFFF4E3);
                 textColor = const Color(0xFF3C3836);
               }
             } else {
-              // Ninja theme
-              if (isDark) {
-                beamColorFrom = const Color(0xFFD8FA69);
-                beamColorTo = const Color(0xFFf5BC74);
-                staticBorderColor = const Color(0xFF555555).withAlpha(0);
+              if (themeProvider.isDarkMode) {
                 backgroundColor = const Color(0xFF233d4d);
                 textColor = const Color(0xFFCAD0D3);
               } else {
-                beamColorFrom = const Color(0xFF046252);
-                beamColorTo = const Color(0xFFC74600);
-                staticBorderColor = const Color(0xFFDDDDDD).withAlpha(0);
                 backgroundColor = const Color(0xFFF8F8F8);
                 textColor = const Color(0xFF3C3836);
               }
             }
+            borderColor = Colors.transparent;
             break;
         }
 
-        // Adjust colors when disabled
         if (widget.onPressed == null || widget.isLoading) {
-          beamColorFrom = beamColorFrom.withAlpha(76); // 0.3 alpha
-          beamColorTo = beamColorTo.withAlpha(76); // 0.3 alpha
-          staticBorderColor = staticBorderColor.withAlpha(0); // 0.5 alpha
-          textColor = textColor.withAlpha(127); // 0.5 alpha
+          textColor = textColor.withAlpha(127);
+          borderColor = borderColor.withAlpha(127);
+          backgroundColor = backgroundColor.withAlpha(200);
         }
 
         return MouseRegion(
-          cursor: (widget.onPressed != null && !widget.isLoading) 
-              ? SystemMouseCursors.click 
+          cursor: (widget.onPressed != null && !widget.isLoading)
+              ? SystemMouseCursors.click
               : SystemMouseCursors.basic,
           onEnter: (_) {
             if (widget.onPressed != null && !widget.isLoading) {
-              setState(() {
-                _isHovered = true;
-              });
+              setState(() => _isHovered = true);
             }
           },
-          onExit: (_) {
-            setState(() {
-              _isHovered = false;
-            });
-          },
+          onExit: (_) => setState(() => _isHovered = false),
           child: AnimatedBuilder(
             animation: _scaleAnimation,
             builder: (context, child) {
-              final radius = BorderRadius.circular(10); // 🔷 one shape everywhere
+              final radius = BorderRadius.circular(effectiveBorderRadius);
+
               return Transform.scale(
                 scale: _scaleAnimation.value,
-                child: Container(
-                  width: widget.width,
-                  height: widget.height,
+                child: AnimatedContainer(
+                  duration: effectiveAnimationDuration,
                   decoration: BoxDecoration(
-                    // Always use dark grey shadow regardless of theme
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2D2D2D).withAlpha(204), // 0.8 alpha
-                        offset: Offset(0, _isPressed ? 2 : 4),
-                        blurRadius: _isPressed ? 4 : 8,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: BorderBeam(
-                    duration: 8, // Faster animation for button
-                    borderWidth: 4.5,
-                    colorFrom: beamColorFrom,
-                    colorTo: beamColorTo,
-                    staticBorderColor: staticBorderColor,
+                    boxShadow: _generateShadows(themeProvider),
                     borderRadius: radius,
-                    child: GestureDetector(
-                      onTapDown: _handleTapDown,
-                      onTapUp: _handleTapUp,
-                      onTapCancel: _handleTapCancel,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        width: double.infinity,
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          color: _isHovered 
-                              ? backgroundColor.withAlpha(229) // 0.9 alpha
-                              : backgroundColor,
-                          borderRadius: radius,
-                        ),
-                        child: Center(
-                          child: widget.isLoading
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: textColor,
-                                  ),
-                                )
-                              : Text(
-                                  widget.text,
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                  textAlign: TextAlign.center,
+                  ),
+                  child: GestureDetector(
+                    onTapDown: _handleTapDown,
+                    onTapUp: _handleTapUp,
+                    onTapCancel: _handleTapCancel,
+                    child: Container(
+                      width: effectiveWidth,
+                      height: effectiveHeight,
+                      decoration: BoxDecoration(
+                        color: _isHovered
+                            ? backgroundColor.withOpacity(effectiveHoverOpacity)
+                            : backgroundColor,
+                        border:
+                            widget.buttonStyle == CustomButtonStyle.secondary
+                                ? Border.all(
+                                    color: borderColor,
+                                    width: effectiveBorderWidth)
+                                : null,
+                        borderRadius: radius,
+                      ),
+                      child: Center(
+                        child: widget.isLoading
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: textColor,
                                 ),
-                        ),
+                              )
+                            : Text(
+                                widget.text,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                       ),
                     ),
                   ),

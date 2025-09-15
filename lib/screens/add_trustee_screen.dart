@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../utils/validators.dart';
 
 class AddTrusteeScreen extends StatefulWidget {
@@ -61,10 +62,9 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
           id: widget.existingTrustee!.id,
           name: _nameController.text.trim(),
           institution: _institutionController.text.trim(),
-          phoneNumber:
-              _phoneController.text.trim().isNotEmpty
-                  ? _phoneController.text.trim()
-                  : null,
+          phoneNumber: _phoneController.text.trim().isNotEmpty
+              ? _phoneController.text.trim()
+              : null,
           createdAt: widget.existingTrustee!.createdAt,
           updatedAt: DateTime.now(),
         );
@@ -80,10 +80,9 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: _nameController.text.trim(),
           institution: _institutionController.text.trim(),
-          phoneNumber:
-              _phoneController.text.trim().isNotEmpty
-                  ? _phoneController.text.trim()
-                  : null,
+          phoneNumber: _phoneController.text.trim().isNotEmpty
+              ? _phoneController.text.trim()
+              : null,
           createdAt: DateTime.now(),
         );
         updatedTrustees.add(newTrustee);
@@ -147,8 +146,8 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
         title: Text(_isEditing ? 'Edit Trustee' : 'Add Trustee'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
       ),
       body: Form(
@@ -163,8 +162,8 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
-              validator:
-                  (value) => Validators.validateRequired(value, 'a name'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a name'),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -174,9 +173,8 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.business),
               ),
-              validator:
-                  (value) =>
-                      Validators.validateRequired(value, 'an institution'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'an institution'),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -188,7 +186,6 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
               ),
               keyboardType: TextInputType.phone,
             ),
-
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -197,7 +194,7 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -205,7 +202,7 @@ class _AddTrusteeScreenState extends State<AddTrusteeScreen> {
                   onPressed: _isLoading ? null : _saveTrustee,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],

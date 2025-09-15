@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 
 class EditPropertyScreen extends StatefulWidget {
   final PropertyFile property;
@@ -22,7 +23,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController _zipController;
   late TextEditingController _loanAmountController;
   late TextEditingController _amountOwedController;
-  late TextEditingController _arrearsController; 
+  late TextEditingController _arrearsController;
 
   bool _isLoading = false;
 
@@ -85,20 +86,15 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         city: _cityController.text.trim(),
         state: _stateController.text.trim(),
         zipCode: _zipController.text.trim(),
-        loanAmount:
-            _loanAmountController.text.isNotEmpty
-                ? double.tryParse(_loanAmountController.text)
-                : null,
-        amountOwed:
-            _amountOwedController.text.isNotEmpty
-                ? double.tryParse(_amountOwedController.text)
-                : null,
-        arrears:
-            _arrearsController
-                    .text
-                    .isNotEmpty // ADD THIS BLOCK
-                ? double.tryParse(_arrearsController.text)
-                : null,
+        loanAmount: _loanAmountController.text.isNotEmpty
+            ? double.tryParse(_loanAmountController.text)
+            : null,
+        amountOwed: _amountOwedController.text.isNotEmpty
+            ? double.tryParse(_amountOwedController.text)
+            : null,
+        arrears: _arrearsController.text.isNotEmpty // ADD THIS BLOCK
+            ? double.tryParse(_arrearsController.text)
+            : null,
         zillowUrl: latestProperty.zillowUrl, // From latest
         contacts: latestProperty.contacts, // From latest
         documents: latestProperty.documents, // From latest
@@ -277,7 +273,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -285,7 +281,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                   onPressed: _isLoading ? null : _saveChanges,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],

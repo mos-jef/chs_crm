@@ -2,12 +2,12 @@ import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/property_file.dart';
-import '../screens/add_document_screen.dart';
-import '../providers/property_provider.dart';
-import '../services/document_service.dart';
-import 'dart:js_interop';
 import 'package:web/web.dart' as web;
+
+import '../models/property_file.dart';
+import '../providers/property_provider.dart';
+import '../screens/add_document_screen.dart';
+import '../services/document_service.dart';
 
 class DocumentsTab extends StatelessWidget {
   final PropertyFile property;
@@ -17,132 +17,129 @@ class DocumentsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:
-          property.documents.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No documents uploaded',
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+      body: property.documents.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No documents uploaded',
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Upload deeds, mortgages, and other important documents',
+                    style: TextStyle(color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: property.documents.length,
+              itemBuilder: (context, index) {
+                final document = property.documents[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      _getDocumentIcon(document.type),
+                      color: Theme.of(context).primaryColor,
+                      size: 32,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Upload deeds, mortgages, and other important documents',
-                      style: TextStyle(color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
+                    title: Text(
+                      document.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ],
-                ),
-              )
-              : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: property.documents.length,
-                itemBuilder: (context, index) {
-                  final document = property.documents[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Icon(
-                        _getDocumentIcon(document.type),
-                        color: Theme.of(context).primaryColor,
-                        size: 32,
-                      ),
-                      title: Text(
-                        document.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(document.type),
-                          Text(
-                            'Added: ${DateFormat('MMM d, yyyy').format(document.uploadDate)}',
-                            style: TextStyle(color: Colors.grey[600]),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(document.type),
+                        Text(
+                          'Added: ${DateFormat('MMM d, yyyy').format(document.uploadDate)}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      if (document.url != null) {
+                        web.window.open(document.url!, '_blank');
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Document file not available'),
                           ),
-                        ],
-                      ),
-                      onTap: () {
-                        if (document.url != null) {
-                          web.window.open(document.url!, '_blank');
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Document file not available'),
-                            ),
-                          );
-                        }
-                      },
-                      trailing: PopupMenuButton(
-                        itemBuilder:
-                            (context) => [
-                              const PopupMenuItem(
-                                value: 'view',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.visibility),
-                                    SizedBox(width: 8),
-                                    Text('View'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, color: Colors.blue),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ],
-                                ),
+                        );
+                      }
+                    },
+                    trailing: PopupMenuButton(
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'view',
+                          child: Row(
+                            children: [
+                              Icon(Icons.visibility),
+                              SizedBox(width: 8),
+                              Text('View'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red),
                               ),
                             ],
-                        onSelected: (value) async {
-                          if (value == 'view') {
-                            if (document.url != null) {
-                              web.window.open(document.url!, '_blank');
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Document file not available'),
-                                ),
-                              );
-                            }
-                          } else if (value == 'edit') {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => AddDocumentScreen(
-                                      property: property,
-                                      existingDocument: document,
-                                    ),
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'view') {
+                          if (document.url != null) {
+                            web.window.open(document.url!, '_blank');
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Document file not available'),
                               ),
                             );
-                          } else if (value == 'delete') {
-                            await _showDeleteDialog(context, document, index);
                           }
-                        },
-                      ),
+                        } else if (value == 'edit') {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => AddDocumentScreen(
+                                property: property,
+                                existingDocument: document,
+                              ),
+                            ),
+                          );
+                        } else if (value == 'delete') {
+                          await _showDeleteDialog(context, document, index);
+                        }
+                      },
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.of(context).push(
@@ -208,14 +205,14 @@ class DocumentsTab extends StatelessWidget {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(false),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
                   text: 'Delete',
                   onPressed: () => Navigator.of(context).pop(true),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
@@ -293,8 +290,8 @@ class DocumentsTab extends StatelessWidget {
 
       // Update Firestore using the safe method
       await context.read<PropertyProvider>().updatePropertySafe(
-        updatedProperty,
-      );
+            updatedProperty,
+          );
 
       // Close loading dialog
       if (context.mounted) {

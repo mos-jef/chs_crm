@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 
 class AddVestingScreen extends StatefulWidget {
   final PropertyFile property;
@@ -90,14 +91,14 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
         zipCode: widget.property.zipCode,
         loanAmount: widget.property.loanAmount,
         amountOwed: widget.property.amountOwed,
-        arrears: widget.property.arrears, 
-        zillowUrl: widget.property.zillowUrl, 
+        arrears: widget.property.arrears,
+        zillowUrl: widget.property.zillowUrl,
         contacts: widget.property.contacts,
         documents: widget.property.documents,
-        judgments: widget.property.judgments, 
-        notes: widget.property.notes, 
-        trustees: widget.property.trustees, 
-        auctions: widget.property.auctions, 
+        judgments: widget.property.judgments,
+        notes: widget.property.notes,
+        trustees: widget.property.trustees,
+        auctions: widget.property.auctions,
         vesting: vesting,
         createdAt: widget.property.createdAt,
         updatedAt: DateTime.now(),
@@ -143,10 +144,9 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
                 labelText: 'Vesting Type *',
                 border: OutlineInputBorder(),
               ),
-              items:
-                  _vestingTypes.map((type) {
-                    return DropdownMenuItem(value: type, child: Text(type));
-                  }).toList(),
+              items: _vestingTypes.map((type) {
+                return DropdownMenuItem(value: type, child: Text(type));
+              }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedVestingType = value!;
@@ -258,9 +258,7 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color:
-                    _totalPercentage == 100.0
-                        ? Colors.green[0]
-                        : Colors.red[0],
+                    _totalPercentage == 100.0 ? Colors.green[0] : Colors.red[0],
                 border: Border.all(
                   color: _totalPercentage == 100.0 ? Colors.green : Colors.red,
                 ),
@@ -277,10 +275,9 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
                     '${_totalPercentage.toStringAsFixed(1)}%',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color:
-                          _totalPercentage == 100.0
-                              ? Colors.green[700]
-                              : Colors.red[700],
+                      color: _totalPercentage == 100.0
+                          ? Colors.green[700]
+                          : Colors.red[700],
                     ),
                   ),
                 ],
@@ -294,7 +291,7 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -302,7 +299,7 @@ class _AddVestingScreenState extends State<AddVestingScreen> {
                   onPressed: _isLoading ? null : _saveVesting,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],

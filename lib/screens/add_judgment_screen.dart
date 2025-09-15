@@ -1,8 +1,9 @@
 import 'package:chs_crm/widgets/custom_beam_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/property_provider.dart';
+
 import '../models/property_file.dart';
+import '../providers/property_provider.dart';
 import '../utils/validators.dart';
 
 class AddJudgmentScreen extends StatefulWidget {
@@ -127,14 +128,14 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
         zipCode: widget.property.zipCode,
         loanAmount: widget.property.loanAmount,
         amountOwed: widget.property.amountOwed,
-        arrears: widget.property.arrears, 
-        zillowUrl: widget.property.zillowUrl, 
+        arrears: widget.property.arrears,
+        zillowUrl: widget.property.zillowUrl,
         contacts: widget.property.contacts,
         documents: widget.property.documents,
         judgments: [...widget.property.judgments, newJudgment],
-        notes: widget.property.notes, 
-        trustees: widget.property.trustees, 
-        auctions: widget.property.auctions, 
+        notes: widget.property.notes,
+        trustees: widget.property.trustees,
+        auctions: widget.property.auctions,
         vesting: widget.property.vesting,
         createdAt: widget.property.createdAt,
         updatedAt: DateTime.now(),
@@ -185,8 +186,8 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
         title: const Text('Add Judgment'),
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed:
-              () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
         ),
       ),
       body: Form(
@@ -200,22 +201,19 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                 labelText: 'Case Number *',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) =>
-                      Validators.validateRequired(value, 'a case number'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a case number'),
             ),
             const SizedBox(height: 16),
-
             DropdownButtonFormField<String>(
               initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 labelText: 'Status *',
                 border: OutlineInputBorder(),
               ),
-              items:
-                  _statuses.map((status) {
-                    return DropdownMenuItem(value: status, child: Text(status));
-                  }).toList(),
+              items: _statuses.map((status) {
+                return DropdownMenuItem(value: status, child: Text(status));
+              }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedStatus = value!;
@@ -223,16 +221,14 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
               },
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap:
-                        () => _selectDate(
-                          _dateOpened,
-                          (date) => _dateOpened = date,
-                        ),
+                    onTap: () => _selectDate(
+                      _dateOpened,
+                      (date) => _dateOpened = date,
+                    ),
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Date Opened',
@@ -250,11 +246,10 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: InkWell(
-                    onTap:
-                        () => _selectDate(
-                          _judgmentDate,
-                          (date) => _judgmentDate = date,
-                        ),
+                    onTap: () => _selectDate(
+                      _judgmentDate,
+                      (date) => _judgmentDate = date,
+                    ),
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Judgment Date',
@@ -272,7 +267,6 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
@@ -283,9 +277,8 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                       labelText: 'County *',
                       border: OutlineInputBorder(),
                     ),
-                    validator:
-                        (value) =>
-                            Validators.validateRequired(value, 'a county'),
+                    validator: (value) =>
+                        Validators.validateRequired(value, 'a county'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -296,13 +289,12 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                       labelText: 'State *',
                       border: OutlineInputBorder(),
                     ),
-                    items:
-                        _states.map((state) {
-                          return DropdownMenuItem(
-                            value: state,
-                            child: Text(state),
-                          );
-                        }).toList(),
+                    items: _states.map((state) {
+                      return DropdownMenuItem(
+                        value: state,
+                        child: Text(state),
+                      );
+                    }).toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedState = value!;
@@ -313,29 +305,26 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _debtorController,
               decoration: const InputDecoration(
                 labelText: 'Debtor *',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) => Validators.validateRequired(value, 'a debtor'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a debtor'),
             ),
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _granteeController,
               decoration: const InputDecoration(
                 labelText: 'Grantee *',
                 border: OutlineInputBorder(),
               ),
-              validator:
-                  (value) => Validators.validateRequired(value, 'a grantee'),
+              validator: (value) =>
+                  Validators.validateRequired(value, 'a grantee'),
             ),
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
@@ -346,7 +335,6 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
               keyboardType: TextInputType.number,
               validator: Validators.validateAmount,
             ),
-
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -355,7 +343,7 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                   text: 'Cancel',
                   onPressed: () => Navigator.of(context).pop(),
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.secondary,
                 ),
                 CustomBeamButton(
@@ -363,7 +351,7 @@ class _AddJudgmentScreenState extends State<AddJudgmentScreen> {
                   onPressed: _isLoading ? null : _saveJudgment,
                   isLoading: _isLoading,
                   width: 100,
-                  height: 60,
+                  height: 45,
                   buttonStyle: CustomButtonStyle.primary,
                 ),
               ],
