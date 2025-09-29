@@ -67,6 +67,340 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${months[nextAuction.auctionDate.month - 1]} ${nextAuction.auctionDate.day}, ${nextAuction.auctionDate.year}';
   }
 
+  // ADD THIS METHOD TO YOUR _HomeScreenState CLASS:
+  // (Place it anywhere in the class, maybe after the _getNextAuctionDate method)
+
+  void _fixAllAddresses(BuildContext context) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Fix Address Parsing'),
+          content: const Text(
+            'This will re-parse all property addresses to properly separate street address, city, state, and ZIP code, then generate Zillow URLs and add county information. This may take several minutes.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Fix All'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Fixing addresses and enhancing properties...'),
+              SizedBox(height: 8),
+              Text(
+                'This may take several minutes',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final fixedCount =
+          await context.read<PropertyProvider>().fixAllPropertyAddresses();
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Successfully fixed and enhanced $fixedCount properties'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to fix addresses: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _enhanceAllProperties(BuildContext context) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enhance All Properties'),
+          content: const Text(
+            'This will add Zillow URLs and county information to all properties that don\'t have them yet. This may take a few moments.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Enhance'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Enhancing properties...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final enhancedCount =
+          await context.read<PropertyProvider>().enhanceAllProperties();
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Enhanced $enhancedCount properties with Zillow URLs and county data'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to enhance properties: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _showDeleteConfirmation(BuildContext context, PropertyFile property) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Property'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Are you sure you want to delete this property?'),
+              const SizedBox(height: 8),
+              Text(
+                'File Number: ${property.fileNumber}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('Address: ${property.address}'),
+              const SizedBox(height: 8),
+              const Text(
+                'This will permanently delete:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              Text('• Property information'),
+              Text('• ${property.documents.length} documents'),
+              Text('• ${property.notes.length} notes'),
+              Text('• ${property.contacts.length} contacts'),
+              const SizedBox(height: 8),
+              const Text(
+                'This action cannot be undone!',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => _performDelete(context, property),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  // REPLACE the current _performDelete method in home_screen.dart with this:
+
+  void _performDelete(BuildContext context, PropertyFile property) async {
+    // Close confirmation dialog first
+    Navigator.of(context).pop();
+
+    bool isDialogOpen = false;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        isDialogOpen = true;
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text('Deleting ${property.fileNumber}...'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      print('🗑️ Starting delete for property: ${property.id}');
+      await context.read<PropertyProvider>().deleteProperty(property.id);
+      print('✅ Delete completed successfully');
+    } catch (e) {
+      print('❌ Delete failed: $e');
+    } finally {
+      // Always ensure dialog is closed
+      if (isDialogOpen && mounted) {
+        print('🔄 Force closing dialog...');
+        Navigator.of(context).pop(); // This will close the loading dialog
+        isDialogOpen = false;
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Property ${property.fileNumber} deleted'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // ALSO ADD THIS ALTERNATIVE METHOD - More robust dialog handling:
+
+  void _performDeleteRobust(BuildContext context, PropertyFile property) async {
+    // Close confirmation dialog first
+    Navigator.of(context).pop();
+
+    // Create a completer to track dialog state
+    bool isDialogOpen = false;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        isDialogOpen = true;
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text('Deleting ${property.fileNumber}...'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      print('🗑️ Starting delete for property: ${property.id}');
+
+      // Perform the delete
+      await context.read<PropertyProvider>().deleteProperty(property.id);
+
+      print('✅ Delete completed - closing dialog');
+    } catch (e) {
+      print('❌ Delete failed: $e');
+    } finally {
+      // Always ensure dialog is closed
+      if (isDialogOpen && mounted) {
+        print('🔄 Force closing dialog...');
+        Navigator.of(context).pop();
+        isDialogOpen = false;
+
+        // Small delay for UI to update
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // Show result message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Property ${property.fileNumber} deleted'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -99,9 +433,69 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text('Community Home Solutions'),
+        title: Consumer<PropertyProvider>(
+          builder: (context, propertyProvider, child) {
+            final totalProperties = propertyProvider.properties.length;
+            final filteredCount = propertyProvider.properties.length;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Community Home Solutions'),
+                Text(
+                  '$filteredCount properties', // Shows filtered count
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
+
+          // property counter badge
+
+          Consumer<PropertyProvider>(
+            builder: (context, propertyProvider, child) {
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[600],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${propertyProvider.properties.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // Fix Addresses Button
+          IconButton(
+            icon: const Icon(Icons.location_on_outlined),
+            tooltip: 'Fix Address Parsing',
+            onPressed: () => _fixAllAddresses(context),
+          ),
+
+          // ENHANCEMENT BUTTON
+          IconButton(
+            icon: const Icon(Icons.auto_fix_high),
+            tooltip: 'Enhance Properties',
+            onPressed: () => _enhanceAllProperties(context),
+          ),
+
+
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -126,7 +520,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
+
           // Search Bar
+
           Container(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -163,6 +559,156 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: _showAdvancedSearch,
                   icon: const Icon(Icons.tune),
                   tooltip: 'Advanced Search',
+                ),
+              ],
+            ),
+          ),
+
+          // 🟢 ADD THE QUICK FILTER CHIPS HERE 🟢
+          // Quick Filter Chips
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Consumer<PropertyProvider>(
+              builder: (context, propertyProvider, child) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Bank Owned Filter
+                      FilterChip(
+                        label: const Text('Bank Owned'),
+                        selected: propertyProvider.advancedSearchCriteria.containsKey('bankOwned'),
+                        onSelected: (selected) {
+                          if (selected) {
+                            propertyProvider.setAdvancedSearchCriteria({
+                              ...propertyProvider.advancedSearchCriteria,
+                              'bankOwned': true,
+                            });
+                          } else {
+                            final newCriteria = Map<String, dynamic>.from(
+                              propertyProvider.advancedSearchCriteria,
+                            );
+                            newCriteria.remove('bankOwned');
+                            propertyProvider.setAdvancedSearchCriteria(newCriteria);
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      
+                      FilterChip(
+                        label: const Text('Under \$200K'),
+                        selected: propertyProvider.advancedSearchCriteria.containsKey('under200k'),
+                        onSelected: (selected) {
+                          if (selected) {
+                            propertyProvider.setAdvancedSearchCriteria({
+                              ...propertyProvider.advancedSearchCriteria,
+                              'maxLoan': 200000,
+                              'under200k': true,
+                            });
+                          } else {
+                            final newCriteria = Map<String, dynamic>.from(
+                              propertyProvider.advancedSearchCriteria,
+                            );
+                            newCriteria.remove('maxLoan');
+                            newCriteria.remove('under200k');
+                            propertyProvider.setAdvancedSearchCriteria(newCriteria);
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      
+                      FilterChip(
+                        label: const Text('Portland'),
+                        selected: propertyProvider.advancedSearchCriteria['city'] == 'Portland',
+                        onSelected: (selected) {
+                          if (selected) {
+                            propertyProvider.setAdvancedSearchCriteria({
+                              ...propertyProvider.advancedSearchCriteria,
+                              'city': 'Portland',
+                            });
+                          } else {
+                            final newCriteria = Map<String, dynamic>.from(
+                              propertyProvider.advancedSearchCriteria,
+                            );
+                            newCriteria.remove('city');
+                            propertyProvider.setAdvancedSearchCriteria(newCriteria);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Sorting Options
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.sort, size: 20),
+                const SizedBox(width: 8),
+                const Text('Sort by:',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Consumer<PropertyProvider>(
+                    builder: (context, propertyProvider, child) {
+                      return DropdownButton<String>(
+                        isExpanded: true,
+                        value: propertyProvider.currentSortOption,
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            propertyProvider.setSortOption(newValue);
+                          }
+                        },
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'fileNumber_asc',
+                            child: Text('File Number (Oldest First)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'fileNumber_desc',
+                            child: Text('File Number (Newest First)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'saleDate_asc',
+                            child: Text('Sale Date (Earliest First)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'saleDate_desc',
+                            child: Text('Sale Date (Latest First)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'totalOwed_asc',
+                            child: Text('Total Owed (Low to High)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'totalOwed_desc',
+                            child: Text('Total Owed (High to Low)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'loanAmount_asc',
+                            child: Text('Loan Amount (Low to High)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'loanAmount_desc',
+                            child: Text('Loan Amount (High to Low)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'address_asc',
+                            child: Text('Address (A-Z)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'city_asc',
+                            child: Text('City (A-Z)'),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -347,13 +893,31 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                         ), 
-                        trailing: const Icon(Icons.arrow_forward_ios),
+
+
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Delete button
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red[600],
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  _showDeleteConfirmation(context, property),
+                              tooltip: 'Delete Property',
+                            ),
+                            // Navigate button
+                            Icon(Icons.arrow_forward_ios, size: 16),
+                          ],
+                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      PropertyDetailScreen(property: property),
+                              builder: (context) =>
+                                  PropertyDetailScreen(property: property),
                             ),
                           );
                         },

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/property_file.dart';
-import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 class OverviewTab extends StatelessWidget {
@@ -49,6 +48,7 @@ class OverviewTab extends StatelessWidget {
       _buildInfoRow('City', property.city),
       _buildInfoRow('State', property.state),
       _buildInfoRow('ZIP Code', property.zipCode),
+      _buildInfoRow('County', _getCountyFromNotes()),
     ]);
   }
 
@@ -540,6 +540,16 @@ class OverviewTab extends StatelessWidget {
       default:
         return Icons.insert_drive_file;
     }
+  }
+
+  // Helper method for pulling in county from "notes" and displaying in property info on overview tab
+  String _getCountyFromNotes() {
+    final countyNote = property.notes.firstWhere(
+      (note) => note.subject == 'County',
+      orElse: () => Note(
+          subject: '', content: 'Not available', createdAt: DateTime.now()),
+    );
+    return countyNote.content.replaceAll(' County, Oregon', '');
   }
 
   String _formatDateTime(DateTime dateTime) {

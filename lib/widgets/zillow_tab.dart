@@ -1,4 +1,4 @@
-import 'dart:js_interop';
+
 import 'package:web/web.dart' as web;
 
 import 'package:chs_crm/providers/theme_provider.dart';

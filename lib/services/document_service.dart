@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class DocumentService {
   static final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -156,9 +157,9 @@ class DocumentService {
 
       // Get download URL with timeout
       String downloadUrl = await ref.getDownloadURL().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw Exception('Timeout getting download URL'),
-      );
+            const Duration(seconds: 30),
+            onTimeout: () => throw Exception('Timeout getting download URL'),
+          );
 
       print('Upload completed successfully: $downloadUrl');
       return downloadUrl;

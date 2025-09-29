@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import '../config/button_theme_config.dart'; // Import the config
+import '../config/button_theme_config.dart'; 
 
 enum CustomButtonStyle {
   primary,
@@ -310,7 +310,7 @@ class _CustomBeamButtonState extends State<CustomBeamButton>
                                 widget.text,
                                 style: TextStyle(
                                   color: textColor,
-                                  fontSize: 16,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),

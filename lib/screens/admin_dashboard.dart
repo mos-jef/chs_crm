@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 
@@ -34,12 +35,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildPendingUsers() {
     return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .where('isApproved', isEqualTo: false)
-              .where('isAdmin', isEqualTo: false)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('isApproved', isEqualTo: false)
+          .where('isAdmin', isEqualTo: false)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -112,10 +112,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor:
-                      user.isAdmin
-                          ? Colors.purple
-                          : user.isApproved
+                  backgroundColor: user.isAdmin
+                      ? Colors.purple
+                      : user.isApproved
                           ? Colors.green
                           : Colors.orange,
                   child: Text(
@@ -125,14 +124,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
                 title: Text(user.email),
                 subtitle: Text(_getUserStatus(user)),
-                trailing:
-                    user.isAdmin
-                        ? const Chip(
-                          label: Text('Admin'),
-                          backgroundColor: Colors.purple,
-                          labelStyle: TextStyle(color: Colors.white),
-                        )
-                        : null,
+                trailing: user.isAdmin
+                    ? const Chip(
+                        label: Text('Admin'),
+                        backgroundColor: Colors.purple,
+                        labelStyle: TextStyle(color: Colors.white),
+                      )
+                    : null,
               ),
             );
           },
@@ -153,35 +151,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> _rejectUser(String uid) async {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Reject User'),
-            content: const Text(
-              'Are you sure you want to reject this user? This will delete their account.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .delete();
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User rejected and deleted')),
-                  );
-                },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Reject User'),
+        content: const Text(
+          'Are you sure you want to reject this user? This will delete their account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .delete();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User rejected and deleted')),
+              );
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

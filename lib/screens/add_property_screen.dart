@@ -7,7 +7,7 @@ import '../providers/property_provider.dart';
 import '../services/file_number_service.dart';
 import '../utils/validators.dart';
 
-// Import the enum separately to ensure it's available
+//import the enum separately to ensure it's available
 // (This is already included in the custom_beam_button.dart import above)
 
 class AddPropertyScreen extends StatefulWidget {

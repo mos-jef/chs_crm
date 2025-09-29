@@ -1,4 +1,7 @@
+import 'package:chs_crm/services/property_delete_service.dart';
+import 'package:chs_crm/services/property_enhancement_service.dart';
 import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/property_file.dart';
 
@@ -8,6 +11,7 @@ class PropertyProvider extends ChangeNotifier {
   bool _isLoading = false;
   String _searchQuery = '';
   Map<String, dynamic> _advancedSearchCriteria = {};
+  String _currentSortOption = 'fileNumber_desc'; // Default to newest first
 
   PropertyFile _createUpdatedProperty(
     PropertyFile original, {
@@ -54,6 +58,113 @@ class PropertyProvider extends ChangeNotifier {
     );
   }
 
+  /// Fix address parsing for all existing properties and re-enhance them
+  Future<int> fixAllPropertyAddresses() async {
+    try {
+      print('=== FIXING ALL PROPERTY ADDRESSES ===');
+      int fixedCount = 0;
+
+      // Find properties with empty city or zipCode but full address
+      final propertiesToFix = _properties
+          .where((property) =>
+              (property.city.isEmpty || property.zipCode.isEmpty) &&
+              property.address.isNotEmpty)
+          .toList();
+
+      print(
+          'Found ${propertiesToFix.length} properties with address parsing issues');
+
+      for (final property in propertiesToFix) {
+        try {
+          // Re-parse the address
+          final addressComponents = _parseFullAddress(property.address);
+
+          // Create updated property with parsed components
+          final fixedProperty = property.copyWith(
+            address: addressComponents['streetAddress'] ?? property.address,
+            city: addressComponents['city'] ?? '',
+            state: addressComponents['state'] ?? property.state,
+            zipCode: addressComponents['zipCode'] ?? '',
+            updatedAt: DateTime.now(),
+          );
+
+          // Now enhance with Zillow URL and county
+          final enhancedProperty =
+              PropertyEnhancementService.enhanceProperty(fixedProperty);
+
+          // Update in database
+          await updateProperty(enhancedProperty);
+          fixedCount++;
+
+          print('Fixed and enhanced property: ${property.fileNumber}');
+          print('  - Address: ${enhancedProperty.address}');
+          print('  - City: ${enhancedProperty.city}');
+          print('  - ZIP: ${enhancedProperty.zipCode}');
+          print('  - County: ${enhancedProperty.county}');
+          print(
+              '  - Zillow: ${enhancedProperty.zillowUrl != null ? 'Generated' : 'Failed'}');
+        } catch (e) {
+          print('Failed to fix property ${property.fileNumber}: $e');
+        }
+      }
+
+      print('Successfully fixed and enhanced $fixedCount properties');
+      return fixedCount;
+    } catch (e) {
+      print('Error in batch address fix: $e');
+      throw e;
+    }
+  }
+
+// Add this helper method to PropertyProvider:
+  static Map<String, String> _parseFullAddress(String fullAddress) {
+    try {
+      final cleanAddress = fullAddress.trim();
+
+      // Look for state and ZIP at the end: "Street, City, STATE ZIPCODE"
+      final stateZipPattern = RegExp(r',\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$');
+      final stateZipMatch = stateZipPattern.firstMatch(cleanAddress);
+
+      if (stateZipMatch != null) {
+        final state = stateZipMatch.group(1)!;
+        final zipCode = stateZipMatch.group(2)!;
+
+        // Remove state and zip to get street and city
+        final beforeStateZip =
+            cleanAddress.substring(0, stateZipMatch.start).trim();
+        final lastCommaIndex = beforeStateZip.lastIndexOf(',');
+
+        if (lastCommaIndex > 0) {
+          final streetAddress =
+              beforeStateZip.substring(0, lastCommaIndex).trim();
+          final city = beforeStateZip.substring(lastCommaIndex + 1).trim();
+
+          return {
+            'streetAddress': streetAddress,
+            'city': city,
+            'state': state,
+            'zipCode': zipCode,
+          };
+        }
+      }
+
+      // Fallback: return original as street address
+      return {
+        'streetAddress': cleanAddress,
+        'city': '',
+        'state': 'OR',
+        'zipCode': '',
+      };
+    } catch (e) {
+      return {
+        'streetAddress': fullAddress,
+        'city': '',
+        'state': 'OR',
+        'zipCode': '',
+      };
+    }
+  }
+
   /// Enhanced update method with validation
   Future<void> updatePropertySafe(PropertyFile property) async {
     try {
@@ -92,72 +203,217 @@ class PropertyProvider extends ChangeNotifier {
     return true;
   }
 
+  // Getters
+  String get currentSortOption => _currentSortOption;
+
+  void setSortOption(String sortOption) {
+    _currentSortOption = sortOption;
+    notifyListeners();
+  }
+
   List<PropertyFile> get properties {
-    if (_searchQuery.isEmpty && _advancedSearchCriteria.isEmpty) {
-      return _properties;
+    var filteredProperties = _properties;
+
+    // Apply search filters first
+    if (_searchQuery.isNotEmpty || _advancedSearchCriteria.isNotEmpty) {
+      filteredProperties = _properties.where((property) {
+        // Basic search
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          final matchesBasic =
+              property.fileNumber.toLowerCase().contains(query) ||
+                  property.address.toLowerCase().contains(query);
+          if (!matchesBasic) return false;
+        }
+
+        // Advanced search
+        if (_advancedSearchCriteria.isNotEmpty) {
+          if (_advancedSearchCriteria.containsKey('fileNumber')) {
+            if (!property.fileNumber.toLowerCase().contains(
+                  _advancedSearchCriteria['fileNumber'].toLowerCase(),
+                )) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('address')) {
+            if (!property.address.toLowerCase().contains(
+                  _advancedSearchCriteria['address'].toLowerCase(),
+                )) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('city')) {
+            if (!property.city.toLowerCase().contains(
+                  _advancedSearchCriteria['city'].toLowerCase(),
+                )) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('state')) {
+            if (!property.state.toLowerCase().contains(
+                  _advancedSearchCriteria['state'].toLowerCase(),
+                )) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('zipCode')) {
+            if (!property.zipCode
+                .contains(_advancedSearchCriteria['zipCode'])) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('minLoan') &&
+              property.loanAmount != null) {
+            if (property.loanAmount! < _advancedSearchCriteria['minLoan']) {
+              return false;
+            }
+          }
+          if (_advancedSearchCriteria.containsKey('maxLoan') &&
+              property.loanAmount != null) {
+            if (property.loanAmount! > _advancedSearchCriteria['maxLoan']) {
+              return false;
+            }
+          }
+
+          // NEW FILTERS - Bank Owned vs Foreclosure
+          if (_advancedSearchCriteria.containsKey('bankOwned')) {
+            final hasBankOwnedAuction = property.auctions.any(
+              (auction) => auction.place.toLowerCase().contains('bank owned'),
+            );
+            if (!hasBankOwnedAuction) return false;
+          }
+
+          if (_advancedSearchCriteria.containsKey('foreclosure')) {
+            final hasForeclosureAuction = property.auctions.any(
+              (auction) => auction.place.toLowerCase().contains('foreclosure'),
+            );
+            if (!hasForeclosureAuction) return false;
+          }
+
+          // NEW FILTERS - Has Documents
+          if (_advancedSearchCriteria.containsKey('hasDocuments')) {
+            if (property.documents.isEmpty) return false;
+          }
+
+          // NEW FILTERS - Has Notes
+          if (_advancedSearchCriteria.containsKey('hasNotes')) {
+            if (property.notes.isEmpty) return false;
+          }
+
+          // NEW FILTERS - Has Upcoming Auctions
+          if (_advancedSearchCriteria.containsKey('hasUpcomingAuctions')) {
+            final hasUpcoming = property.auctions.any(
+              (auction) =>
+                  !auction.auctionCompleted &&
+                  auction.auctionDate.isAfter(DateTime.now()),
+            );
+            if (!hasUpcoming) return false;
+          }
+        }
+
+        return true;
+      }).toList();
     }
 
-    return _properties.where((property) {
-      // Basic search
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final matchesBasic =
-            property.fileNumber.toLowerCase().contains(query) ||
-            property.address.toLowerCase().contains(query);
-        if (!matchesBasic) return false;
-      }
+    // Apply sorting
+    switch (_currentSortOption) {
+      case 'fileNumber_asc':
+        filteredProperties.sort((a, b) => a.fileNumber.compareTo(b.fileNumber));
+        break;
+      case 'fileNumber_desc':
+        filteredProperties.sort((a, b) => b.fileNumber.compareTo(a.fileNumber));
+        break;
+      case 'saleDate_asc':
+        filteredProperties.sort((a, b) {
+          final aDate = _getNextAuctionDate(a);
+          final bDate = _getNextAuctionDate(b);
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return aDate.compareTo(bDate);
+        });
+        break;
+      case 'saleDate_desc':
+        filteredProperties.sort((a, b) {
+          final aDate = _getNextAuctionDate(a);
+          final bDate = _getNextAuctionDate(b);
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return bDate.compareTo(aDate);
+        });
+        break;
+      case 'totalOwed_asc':
+        filteredProperties.sort((a, b) {
+          final aTotal = a.totalOwed;
+          final bTotal = b.totalOwed;
+          return aTotal.compareTo(bTotal);
+        });
+        break;
+      case 'totalOwed_desc':
+        filteredProperties.sort((a, b) {
+          final aTotal = a.totalOwed;
+          final bTotal = b.totalOwed;
+          return bTotal.compareTo(aTotal);
+        });
+        break;
+      case 'loanAmount_asc':
+        filteredProperties.sort((a, b) {
+          final aLoan = a.loanAmount ?? 0;
+          final bLoan = b.loanAmount ?? 0;
+          return aLoan.compareTo(bLoan);
+        });
+        break;
+      case 'loanAmount_desc':
+        filteredProperties.sort((a, b) {
+          final aLoan = a.loanAmount ?? 0;
+          final bLoan = b.loanAmount ?? 0;
+          return bLoan.compareTo(aLoan);
+        });
+        break;
+      case 'address_asc':
+        filteredProperties.sort((a, b) => a.address.compareTo(b.address));
+        break;
+      case 'city_asc':
+        filteredProperties.sort((a, b) => a.city.compareTo(b.city));
+        break;
+      default:
+        // Default to newest file number first
+        filteredProperties.sort((a, b) => b.fileNumber.compareTo(a.fileNumber));
+        break;
+    }
 
-      // Advanced search
-      if (_advancedSearchCriteria.isNotEmpty) {
-        if (_advancedSearchCriteria.containsKey('fileNumber')) {
-          if (!property.fileNumber.toLowerCase().contains(
-            _advancedSearchCriteria['fileNumber'].toLowerCase(),
-          )) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('address')) {
-          if (!property.address.toLowerCase().contains(
-            _advancedSearchCriteria['address'].toLowerCase(),
-          )) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('city')) {
-          if (!property.city.toLowerCase().contains(
-            _advancedSearchCriteria['city'].toLowerCase(),
-          )) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('state')) {
-          if (!property.state.toLowerCase().contains(
-            _advancedSearchCriteria['state'].toLowerCase(),
-          )) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('zipCode')) {
-          if (!property.zipCode.contains(_advancedSearchCriteria['zipCode'])) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('minLoan') &&
-            property.loanAmount != null) {
-          if (property.loanAmount! < _advancedSearchCriteria['minLoan']) {
-            return false;
-          }
-        }
-        if (_advancedSearchCriteria.containsKey('maxLoan') &&
-            property.loanAmount != null) {
-          if (property.loanAmount! > _advancedSearchCriteria['maxLoan']) {
-            return false;
-          }
+    return filteredProperties;
+  }
+
+  // Helper method to get next auction date for sorting
+  DateTime? _getNextAuctionDate(PropertyFile property) {
+    if (property.auctions.isEmpty) return null;
+
+    // Find the next upcoming auction (not completed) or the most recent one
+    Auction? nextAuction;
+
+    // First try to find an upcoming auction
+    for (var auction in property.auctions) {
+      if (!auction.auctionCompleted) {
+        if (nextAuction == null ||
+            auction.auctionDate.isBefore(nextAuction.auctionDate)) {
+          nextAuction = auction;
         }
       }
+    }
 
-      return true;
-    }).toList();
+    // If no upcoming auctions, get the most recent completed one
+    if (nextAuction == null) {
+      for (var auction in property.auctions) {
+        if (nextAuction == null ||
+            auction.auctionDate.isAfter(nextAuction.auctionDate)) {
+          nextAuction = auction;
+        }
+      }
+    }
+
+    return nextAuction?.auctionDate;
   }
 
   bool get isLoading => _isLoading;
@@ -190,20 +446,11 @@ class PropertyProvider extends ChangeNotifier {
       final querySnapshot = await _firestore.collection('properties').get();
       print('Found ${querySnapshot.docs.length} properties in Firestore');
 
-      _properties =
-          querySnapshot.docs.map((doc) {
-            final data = {...doc.data(), 'id': doc.id};
-            final property = PropertyFile.fromMap(data);
-
-            // Debug logging for each property
-            print('Property ${property.fileNumber}:');
-            print('  - Documents: ${property.documents.length}');
-            print('  - Notes: ${property.notes.length}');
-            print('  - Trustees: ${property.trustees.length}');
-            print('  - Auctions: ${property.auctions.length}');
-
-            return property;
-          }).toList();
+      _properties = querySnapshot.docs.map((doc) {
+        final data = {...doc.data(), 'id': doc.id};
+        final property = PropertyFile.fromMap(data);
+        return property;
+      }).toList();
 
       print('Total properties loaded: ${_properties.length}');
     } catch (e) {
@@ -219,9 +466,8 @@ class PropertyProvider extends ChangeNotifier {
       print('=== ADDING PROPERTY ===');
       print('Property: ${property.fileNumber}');
 
-      final docRef = await _firestore
-          .collection('properties')
-          .add(property.toMap());
+      final docRef =
+          await _firestore.collection('properties').add(property.toMap());
 
       final newProperty = PropertyFile.fromMap({
         ...property.toMap(),
@@ -364,11 +610,94 @@ class PropertyProvider extends ChangeNotifier {
 
   Future<void> deleteProperty(String propertyId) async {
     try {
-      await _firestore.collection('properties').doc(propertyId).delete();
-      _properties.removeWhere((property) => property.id == propertyId);
-      notifyListeners();
+      final property = getPropertyById(propertyId);
+      if (property == null) {
+        throw Exception('Property not found');
+      }
+
+      // Use the comprehensive delete service
+      final success =
+          await PropertyDeleteService.deletePropertyComplete(property);
+
+      if (success) {
+        _properties.removeWhere((p) => p.id == propertyId);
+        notifyListeners();
+      } else {
+        throw Exception('Failed to delete property completely');
+      }
     } catch (e) {
       print('Error deleting property: $e');
+      throw e;
+    }
+  }
+
+  // Add soft delete capability
+  Future<void> softDeleteProperty(String propertyId) async {
+    try {
+      final property = getPropertyById(propertyId);
+      if (property == null) {
+        throw Exception('Property not found');
+      }
+
+      final success = await PropertyDeleteService.softDeleteProperty(property);
+
+      if (success) {
+        await loadProperties(); // Refresh to hide soft-deleted properties
+      } else {
+        throw Exception('Failed to soft delete property');
+      }
+    } catch (e) {
+      print('Error soft deleting property: $e');
+      throw e;
+    }
+  }
+
+// Add restore capability
+  Future<void> restoreProperty(String propertyId) async {
+    try {
+      final property = getPropertyById(propertyId);
+      if (property == null) {
+        throw Exception('Property not found');
+      }
+
+      final success = await PropertyDeleteService.restoreProperty(property);
+
+      if (success) {
+        await loadProperties(); // Refresh to show restored property
+      } else {
+        throw Exception('Failed to restore property');
+      }
+    } catch (e) {
+      print('Error restoring property: $e');
+      throw e;
+    }
+  }
+
+// Add batch delete capability
+  Future<Map<String, bool>> batchDeleteProperties(
+      List<String> propertyIds) async {
+    try {
+      final properties = propertyIds
+          .map((id) => getPropertyById(id))
+          .where((prop) => prop != null)
+          .cast<PropertyFile>()
+          .toList();
+
+      final results =
+          await PropertyDeleteService.batchDeleteProperties(properties);
+
+      // Remove successful deletions from local cache
+      for (final entry in results.entries) {
+        if (entry.value) {
+          // If deletion was successful
+          _properties.removeWhere((p) => p.fileNumber == entry.key);
+        }
+      }
+
+      notifyListeners();
+      return results;
+    } catch (e) {
+      print('Error batch deleting properties: $e');
       throw e;
     }
   }
@@ -414,6 +743,61 @@ class PropertyProvider extends ChangeNotifier {
     } catch (e) {
       print('Error refreshing property: $e');
       return null;
+    }
+  }
+  /// Batch enhance all existing properties
+  Future<int> enhanceAllProperties() async {
+    try {
+      print('=== ENHANCING ALL PROPERTIES ===');
+      int enhancedCount = 0;
+
+      final propertiesToEnhance = _properties
+          .where((property) =>
+              PropertyEnhancementService.needsEnhancement(property))
+          .toList();
+
+      print(
+          'Found ${propertiesToEnhance.length} properties that need enhancement');
+
+      for (final property in propertiesToEnhance) {
+        try {
+          final enhancedProperty =
+              PropertyEnhancementService.enhanceProperty(property);
+          await updateProperty(enhancedProperty);
+          enhancedCount++;
+          print('Enhanced property: ${property.fileNumber}');
+        } catch (e) {
+          print('Failed to enhance property ${property.fileNumber}: $e');
+        }
+      }
+
+      print('Successfully enhanced $enhancedCount properties');
+      return enhancedCount;
+    } catch (e) {
+      print('Error in batch enhancement: $e');
+      throw e;
+    }
+  }
+
+  /// Enhance a single property
+  Future<void> enhanceProperty(String propertyId) async {
+    try {
+      final property = getPropertyById(propertyId);
+      if (property == null) {
+        throw Exception('Property not found');
+      }
+
+      if (PropertyEnhancementService.needsEnhancement(property)) {
+        final enhancedProperty =
+            PropertyEnhancementService.enhanceProperty(property);
+        await updateProperty(enhancedProperty);
+        print('Enhanced property: ${property.fileNumber}');
+      } else {
+        print('Property ${property.fileNumber} already enhanced');
+      }
+    } catch (e) {
+      print('Error enhancing property: $e');
+      throw e;
     }
   }
 }

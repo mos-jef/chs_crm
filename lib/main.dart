@@ -1,3 +1,6 @@
+// lib/main.dart
+import 'package:chs_crm/screens/automation_dashboard.dart';
+import 'package:chs_crm/screens/enhanced_automation_dashboard.dart'; // ADD THIS IMPORT
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +13,7 @@ import 'screens/home_screen.dart';
 import 'screens/pending_approval_screen.dart';
 import 'screens/admin_dashboard.dart';
 import 'utils/app_themes.dart';
+import 'screens/pdf_upload_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,13 +91,30 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
+    // Add PDF Upload as a separate tab
     final List<Widget> screens = [
       const HomeScreen(),
+      const EnhancedAutomationDashboard(), // Auto Crawl
+      const AutomationDashboard(), // Auto Dashboard
+      const PdfUploadScreen(), // NEW: PDF Upload
       if (authProvider.isAdmin) const AdminDashboard(),
     ];
 
     final List<BottomNavigationBarItem> navItems = [
       const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      
+      // const BottomNavigationBarItem(
+       // icon: Icon(Icons.auto_awesome),
+         //label: 'Auto Crawl',
+      //),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard_customize),
+        label: 'Auto Dashboard',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.upload_file),
+        label: 'PDF Upload',
+      ),
       if (authProvider.isAdmin)
         const BottomNavigationBarItem(
           icon: Icon(Icons.admin_panel_settings),
@@ -103,14 +124,13 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar:
-          navItems.length > 1
-              ? BottomNavigationBar(
-                currentIndex: _currentIndex,
-                onTap: (index) => setState(() => _currentIndex = index),
-                items: navItems,
-              )
-              : null,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: navItems,
+        type: BottomNavigationBarType.fixed,
+      ),
     );
   }
 }
+

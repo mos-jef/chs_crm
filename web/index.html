@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <!--
+<head>
+  <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
@@ -13,32 +13,231 @@
 
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
-    -->
-    <base href="$FLUTTER_BASE_HREF" />
+  -->
+  <base href="$FLUTTER_BASE_HREF">
 
-    <meta charset="UTF-8" />
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta
-      name="description"
-      content="A CRM system for foreclosure and real estate file management."
-    />
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A CRM system for foreclosure and real estate file management.">
 
-    <!-- iOS meta tags & icons -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta
-      name="apple-mobile-web-app-title"
-      content="Community Home Solutions"
-    />
-    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Community Home Solutions">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="favicon.png" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
 
-    <title>Community Home Solutions</title>
-    <link rel="manifest" href="manifest.json" />
-  </head>
-  <body>
-    <script src="flutter_bootstrap.js" async></script>
-  </body>
+  <title>Community Home Solutions</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .loading-container {
+      text-align: center;
+      color: white;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 18px;
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+    
+    .loading-subtext {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-container" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading Community Home Solutions CRM</div>
+    <div class="loading-subtext">Initializing foreclosure management system...</div>
+  </div>
+
+  <!-- 🔑 Environment Variables Setup -->
+  <script>
+    // Environment variables for Flutter Web
+    window.ENV = {
+      // Check if running in development
+      isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+      
+      // Claude API configuration - REPLACE 'your_api_key_here' WITH YOUR ACTUAL API KEY
+      CLAUDE_API_KEY: '', // Will be set below for development
+      
+      // CORS Proxy configuration
+      CORS_PROXIES: [
+        'https://corsproxy.io/?',
+        'https://api.codetabs.com/v1/proxy?quest=',
+        'https://cors-anywhere.herokuapp.com/'
+      ],
+      
+      // API endpoints
+      FIREBASE_CONFIG: {
+        // Your Firebase config will be injected here
+      }
+    };
+
+    // 🔧 Development Environment Setup
+    if (window.ENV.isDevelopment) {
+      // 🚨 IMPORTANT: Replace 'sk-ant-api03-YOUR_API_KEY_HERE' with your actual Claude API key
+      // Get this from your .env file: CLAUDE_API_KEY=sk-ant-api03-...
+      window.ENV.CLAUDE_API_KEY = ''; // 👈 claude API key
+      
+      console.log('🔧 Development mode detected');
+      console.log('🔑 Claude API Key configured:', window.ENV.CLAUDE_API_KEY ? '✅ Set' : '❌ Missing');
+      
+      // Additional development logging
+      console.log('🌐 CORS Proxies available:', window.ENV.CORS_PROXIES.length);
+    }
+
+    // 🌐 CORS Debug Helper
+    window.debugCORS = function() {
+      console.log('🌐 Available CORS Proxies:');
+      window.ENV.CORS_PROXIES.forEach((proxy, index) => {
+        console.log(`  ${index + 1}. ${proxy}`);
+      });
+    };
+
+    // 🧪 Test Function for CORS Proxies
+    window.testCorsProxy = async function(proxyIndex = 0) {
+      const proxy = window.ENV.CORS_PROXIES[proxyIndex];
+      const testUrl = 'https://httpbin.org/get';
+      
+      console.log(`🧪 Testing proxy: ${proxy}`);
+      
+      try {
+        const response = await fetch(proxy + testUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Proxy ${proxyIndex + 1} working`);
+          return true;
+        } else {
+          console.log(`❌ Proxy ${proxyIndex + 1} failed: HTTP ${response.status}`);
+          return false;
+        }
+      } catch (error) {
+        console.log(`❌ Proxy ${proxyIndex + 1} error:`, error.message);
+        return false;
+      }
+    };
+
+    // 🔍 Firebase Debug Helper
+    window.debugFirebase = function() {
+      console.log('🔥 Firebase Configuration Check:');
+      console.log('Config present:', !!window.ENV.FIREBASE_CONFIG);
+      
+      // Check if Firebase is initialized
+      if (typeof firebase !== 'undefined') {
+        console.log('✅ Firebase SDK loaded');
+      } else {
+        console.log('❌ Firebase SDK not loaded');
+      }
+    };
+
+    // 🎯 CRM Debug Helper
+    window.debugCRM = function() {
+      console.log('🎯 CRM Debug Information:');
+      console.log('Environment:', window.ENV.isDevelopment ? 'Development' : 'Production');
+      console.log('Claude API Key:', window.ENV.CLAUDE_API_KEY ? 'Configured' : 'Missing');
+      console.log('CORS Proxies:', window.ENV.CORS_PROXIES.length + ' available');
+      console.log('Current URL:', window.location.href);
+      
+      // Test a simple fetch to see CORS behavior
+      console.log('Testing basic fetch capability...');
+      fetch('https://httpbin.org/get')
+        .then(response => {
+          if (response.ok) {
+            console.log('✅ Basic fetch works - CORS may not be an issue');
+          } else {
+            console.log('⚠️ Basic fetch got response but not OK:', response.status);
+          }
+        })
+        .catch(error => {
+          console.log('❌ Basic fetch failed:', error.message);
+          if (error.message.toLowerCase().includes('cors')) {
+            console.log('🚫 CORS is blocking requests - you may need to disable CORS in Chrome');
+          }
+        });
+    };
+  </script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+
+  <!-- Flutter Bootstrap -->
+  <script>
+    // Hide loading screen when Flutter loads
+    window.addEventListener('load', function(ev) {
+      // Wait for flutter_bootstrap.js to load
+      if (window.flutterConfiguration) {
+        // New Flutter bootstrap method
+        window.flutterConfiguration.loadEntrypoint({
+          onEntrypointLoaded: function(engineInitializer) {
+            engineInitializer.initializeEngine().then(function(appRunner) {
+              // Hide loading screen
+              document.getElementById('loading').style.display = 'none';
+              
+              // Start Flutter app
+              appRunner.runApp();
+              
+              // Debug helpers available after app starts
+              setTimeout(() => {
+                console.log('🎯 CHS CRM Debug Commands Available:');
+                console.log('  window.debugCORS() - Check CORS proxy configuration');
+                console.log('  window.testCorsProxy(0) - Test specific CORS proxy');
+                console.log('  window.debugFirebase() - Check Firebase setup');
+                console.log('  window.debugCRM() - Run comprehensive CRM diagnostics');
+                
+                // Auto-run diagnostics in development
+                if (window.ENV.isDevelopment) {
+                  console.log('🔧 Running auto-diagnostics...');
+                  window.debugCRM();
+                }
+              }, 2000);
+            });
+          }
+        });
+      }
+    });
+  </script>
+
+  <!-- Flutter Bootstrap Script -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
 </html>
