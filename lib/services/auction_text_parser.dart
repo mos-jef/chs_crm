@@ -1,4 +1,4 @@
-// lib/services/auction_text_parser.dart - FINAL UPDATED VERSION
+// lib/services/auction_text_parser.dart - FIXED VERSION WITH ZILLOW URL SEPARATION
 import 'package:chs_crm/services/property_enhancement_service.dart';
 import 'package:flutter/material.dart';
 import '../models/property_file.dart';
@@ -56,14 +56,104 @@ class AuctionTextParser {
 
       if (currentProperty == null) continue;
 
-      // Store bid type information as note (Current Bid, Opening Bid, etc.)
+      // ✅ NEW: Extract Zillow URL (and DON'T treat it as an address!)
+      if (_isZillowUrl(line)) {
+        currentProperty = currentProperty.copyWith(
+          zillowUrl: line.trim(),
+          updatedAt: DateTime.now(),
+        );
+        continue;
+      }
+
+      // ✅ NEW: Extract "Total Required to Reinstate" → arrears
+      if (_isReinstateAmountLine(line)) {
+        final reinstateAmount = _extractMoneyAmount(line);
+        if (reinstateAmount != null) {
+          currentProperty = currentProperty.copyWith(
+            arrears: reinstateAmount,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // ✅ NEW: Extract "Total Required to Payoff" → amountOwed
+      if (_isPayoffAmountLine(line)) {
+        final payoffAmount = _extractMoneyAmount(line);
+        if (payoffAmount != null) {
+          currentProperty = currentProperty.copyWith(
+            amountOwed: payoffAmount,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // ✅ NEW: Extract Owner information
+      if (_isOwnerLine(line)) {
+        final ownerName = _extractOwnerName(line);
+        if (ownerName != null) {
+          currentProperty =
+              _updatePropertyWithOwner(currentProperty, ownerName);
+        }
+        continue;
+      }
+
+      // ✅ NEW: Extract Parcel/APN information
+      if (_isParcelLine(line)) {
+        final parcelNumber = _extractParcelNumber(line);
+        if (parcelNumber != null) {
+          currentProperty = currentProperty.copyWith(
+            taxAccountNumber: parcelNumber,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // ✅ NEW: Extract County information
+      if (_isCountyLine(line)) {
+        final countyName = _extractCountyName(line);
+        if (countyName != null) {
+          final countyNote = Note(
+            subject: 'County',
+            content: countyName,
+            createdAt: DateTime.now(),
+          );
+          currentProperty = currentProperty.copyWith(
+            notes: [...currentProperty.notes, countyNote],
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // ✅ NEW: Extract Auction Date
+      if (_isAuctionDateLine(line)) {
+        final auctionDate = _extractAuctionDate(line);
+        if (auctionDate != null) {
+          // Store temporarily in notes, will be moved to proper auction object later
+          final dateNote = Note(
+            subject: 'Auction Date',
+            content: line,
+            createdAt: DateTime.now(),
+          );
+          currentProperty = currentProperty.copyWith(
+            notes: [...currentProperty.notes, dateNote],
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // Store bid type information as note
       if (_isBidTypeLine(line)) {
         currentProperty = _updatePropertyWithBidType(currentProperty, line);
         continue;
       }
 
-      // Address line (now parses full address including city/state/zip)
-      if (_isAddressLine(line)) {
+      // Address line (FIXED: Won't capture URLs anymore)
+      if (_isAddressLine(line) && !_isZillowUrl(line)) {
         currentProperty = _updatePropertyWithAddress(currentProperty, line);
         continue;
       }
@@ -89,14 +179,18 @@ class AuctionTextParser {
 
     // Save last property
     if (currentProperty != null) {
-      // AUTO-ENHANCE before adding to list
-      final enhancedProperty =
-          PropertyEnhancementService.enhanceProperty(currentProperty);
-      properties.add(enhancedProperty);
+      // DON'T auto-enhance if we already have a Zillow URL
+      // Only enhance if missing Zillow URL or county
+      if (PropertyEnhancementService.needsEnhancement(currentProperty)) {
+        final enhancedProperty =
+            PropertyEnhancementService.enhanceProperty(currentProperty);
+        properties.add(enhancedProperty);
+      } else {
+        properties.add(currentProperty);
+      }
     }
 
-    debugPrint('✅ Parsed ${properties.length} properties from Auction.com');
-    debugPrint('🔗 Auto-enhanced with Zillow URLs and county data');
+    debugPrint('✅ Parsed ${properties.length} properties');
 
     return properties;
   }
@@ -105,6 +199,163 @@ class AuctionTextParser {
   static bool _isNewPropertyTrigger(String line) {
     // Only dollar amounts like $300,000 or TBD should start new properties
     return RegExp(r'^\$[0-9,]+$').hasMatch(line) || line.trim() == 'TBD';
+  }
+
+  // ✅ NEW: Detect Zillow URLs
+  static bool _isZillowUrl(String line) {
+    return line.toLowerCase().contains('zillow.com') ||
+        line.toLowerCase().startsWith('http');
+  }
+
+  // ✅ NEW: Detect reinstate amount lines
+  static bool _isReinstateAmountLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return lowerLine.contains('reinstate') ||
+        lowerLine.contains('to cure') ||
+        lowerLine.contains('necessary to cure');
+  }
+
+  // ✅ NEW: Detect payoff amount lines
+  static bool _isPayoffAmountLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return (lowerLine.contains('payoff') ||
+            lowerLine.contains('discharge this lien') ||
+            lowerLine.contains('total owed')) &&
+        !lowerLine.contains('reinstate');
+  }
+
+  // ✅ NEW: Detect owner information lines
+  static bool _isOwnerLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return lowerLine.startsWith('owner:') || lowerLine.contains('owner:');
+  }
+
+  // ✅ NEW: Detect parcel/APN lines
+  static bool _isParcelLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return lowerLine.contains('parcel') ||
+        lowerLine.contains('apn:') ||
+        lowerLine.contains('tax id') ||
+        lowerLine.contains('account number:');
+  }
+
+  // ✅ NEW: Detect county lines
+  static bool _isCountyLine(String line) {
+    final lowerLine = line.toLowerCase();
+    // Must contain "county" but NOT be part of an address or auction location
+    return lowerLine.contains('county') &&
+        !lowerLine.contains('courthouse') &&
+        !_isAddressLine(line) &&
+        RegExp(r'^[A-Za-z\s]+County\s*$', caseSensitive: false).hasMatch(line);
+  }
+
+  // ✅ NEW: Detect auction date lines
+  static bool _isAuctionDateLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return lowerLine.startsWith('auction date:') ||
+        lowerLine.startsWith('date:');
+  }
+
+  // ✅ NEW: Extract dollar amount from line
+  static double? _extractMoneyAmount(String line) {
+    // Match patterns like: $17,043.78 or $189,419.05
+    final moneyPattern = RegExp(r'\$([0-9,]+\.?\d*)');
+    final match = moneyPattern.firstMatch(line);
+
+    if (match != null) {
+      final amountStr = match.group(1)!.replaceAll(',', '');
+      return double.tryParse(amountStr);
+    }
+
+    return null;
+  }
+
+  // ✅ NEW: Extract owner name
+  static String? _extractOwnerName(String line) {
+    // Remove "Owner:" prefix and trim
+    final ownerPattern = RegExp(r'owner:\s*(.+)', caseSensitive: false);
+    final match = ownerPattern.firstMatch(line);
+
+    if (match != null) {
+      return match.group(1)!.trim();
+    }
+
+    return null;
+  }
+
+  // ✅ NEW: Extract parcel number
+  static String? _extractParcelNumber(String line) {
+    // Extract everything after "Parcel Number:", "APN:", etc.
+    final parcelPatterns = [
+      RegExp(r'parcel\s*(?:number)?:\s*(.+)', caseSensitive: false),
+      RegExp(r'apn:\s*(.+)', caseSensitive: false),
+      RegExp(r'tax\s*(?:id|account):\s*(.+)', caseSensitive: false),
+    ];
+
+    for (final pattern in parcelPatterns) {
+      final match = pattern.firstMatch(line);
+      if (match != null) {
+        return match.group(1)!.trim();
+      }
+    }
+
+    return null;
+  }
+
+  // ✅ NEW: Extract county name
+  static String? _extractCountyName(String line) {
+    // Extract just the county name (e.g., "Lane County" → "Lane")
+    final countyPattern =
+        RegExp(r'^([A-Za-z\s]+)\s*County', caseSensitive: false);
+    final match = countyPattern.firstMatch(line.trim());
+
+    if (match != null) {
+      return '${match.group(1)!.trim()} County';
+    }
+
+    return null;
+  }
+
+  // ✅ NEW: Extract auction date
+  static DateTime? _extractAuctionDate(String line) {
+    // Try to parse date from line
+    // This is a simple implementation - you may want to enhance it
+    final datePattern = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})');
+    final match = datePattern.firstMatch(line);
+
+    if (match != null) {
+      final month = int.tryParse(match.group(1)!);
+      final day = int.tryParse(match.group(2)!);
+      var year = int.tryParse(match.group(3)!);
+
+      if (year != null && year < 100) {
+        year += 2000; // Convert 25 to 2025
+      }
+
+      if (month != null && day != null && year != null) {
+        try {
+          return DateTime(year, month, day);
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // ✅ NEW: Update property with owner/vesting info
+  static PropertyFile _updatePropertyWithOwner(
+      PropertyFile property, String ownerName) {
+    final vesting = VestingInfo(
+      owners: [Owner(name: ownerName, percentage: 100.0)],
+      vestingType: 'Unknown',
+    );
+
+    return property.copyWith(
+      vesting: vesting,
+      updatedAt: DateTime.now(),
+    );
   }
 
   // Detect bid type lines
@@ -121,8 +372,6 @@ class AuctionTextParser {
         line.contains('FCL Predict');
   }
 
-  // --- Helper methods ---
-
   static Future<PropertyFile> _createNewProperty() async {
     final fileNumber = await FileNumberService.reserveFileNumber();
     return PropertyFile(
@@ -136,6 +385,7 @@ class AuctionTextParser {
       loanAmount: null,
       amountOwed: null,
       arrears: null,
+      zillowUrl: null, // ✅ Explicitly set to null
       contacts: [],
       documents: [],
       judgments: [],
@@ -172,7 +422,7 @@ class AuctionTextParser {
 
   static PropertyFile _updatePropertyWithAddress(
       PropertyFile property, String fullAddressLine) {
-    // Parse full address like "3774 Homestead Ct NE, Keizer, OR 97303"
+    // Parse full address like "1619 S BERTELSEN RD, EUGENE, OR 97402"
     final addressComponents = _parseFullAddress(fullAddressLine);
 
     return property.copyWith(
@@ -325,13 +575,15 @@ class AuctionTextParser {
 
   // Pattern detection helpers
   static bool _isAddressLine(String line) {
-    return RegExp(r'\d+.+(St|Ave|Rd|Dr|Ln|Blvd|Way|Ct|Pl|Cir|Highway)',
+    // FIXED: Don't match URLs as addresses
+    if (_isZillowUrl(line)) return false;
+
+    return RegExp(r'\d+.+(St|Ave|Rd|Dr|Ln|Blvd|Way|Ct|Pl|Cir|Highway|Street)',
             caseSensitive: false)
         .hasMatch(line);
   }
 
   static bool _isCityStateLine(String line) {
-    // No longer used, but kept for potential legacy fallback
     return RegExp(r'^[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}').hasMatch(line);
   }
 

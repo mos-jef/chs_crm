@@ -564,6 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          /*
           // 🟢 ADD THE QUICK FILTER CHIPS HERE 🟢
           // Quick Filter Chips
           Container(
@@ -642,6 +643,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
+
+          */
 
           // Sorting Options
           Container(
@@ -856,34 +859,36 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ).textTheme.bodySmall?.color,
                                   ),
                                 ),
-                                if (property.loanAmount != null)
+
+                                if (property.amountOwed != null)
                                   Text(
-                                    'Loan: \$${NumberFormat('#,##0.00').format(property.loanAmount!)}',
+                                    'Amount Owed: \$${NumberFormat('#,##0.00').format(property.amountOwed!)}',
                                     style: TextStyle(
-                                      color: AppThemes.getLoanAmountColor(
-                                        themeProvider.currentTheme,
-                                      ),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                if (property.loanAmount != null ||
-                                    property.amountOwed != null ||
-                                    property.arrears != null)
-                                  Text(
-                                    'Total Owed: \$${NumberFormat('#,##0.00').format(property.totalOwed)}',
-                                    style: TextStyle(
-                                      color: AppThemes.getTotalOwedColor(
+                                      color: AppThemes.getAmountOwedColor(
                                         themeProvider.currentTheme,
                                       ),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                if (property.arrears != null)
+                                  Text(
+                                    'Arrears: \$${NumberFormat('#,##0.00').format(property.arrears!)}',
+                                    style: TextStyle(
+                                      color: AppThemes.getArrearsColor(
+                                        themeProvider.currentTheme,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+
+
                                 // ADD THIS NEW SALE DATE LINE:
+
                                 if (_getNextAuctionDate(property) != null)
                                   Text(
                                     'Sale Date: ${_getNextAuctionDate(property)}',
                                     style: TextStyle(
-                                      color: AppThemes.getAmountOwedColor(
+                                      color: AppThemes.getTotalOwedColor(
                                         themeProvider.currentTheme,
                                       ),
                                       fontWeight: FontWeight.w600,

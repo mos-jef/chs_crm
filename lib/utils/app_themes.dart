@@ -43,23 +43,23 @@ class AppThemes {
 
   // Financial Colors - Athlete Light
   static const Color _athleteLightLoanAmount = Color(0xFF2E7D32); // Green
-  static const Color _athleteLightAmountOwed = Color(0xFFD32F2F); // Red
-  static const Color _athleteLightArrears = Color(0xFFFF6F00); // Orange
+  static const Color _athleteLightAmountOwed = Color(0xFF850D8F); 
+  static const Color _athleteLightArrears = Color(0xFFC74600); // Orange
 
   // Financial Colors - Athlete Dark
-  static const Color _athleteDarkLoanAmount = Color(0xFF4CAF50); // Bright Green
-  static const Color _athleteDarkAmountOwed = Color(0xFFFF5252); // Bright Red
-  static const Color _athleteDarkArrears = Color(0xFFFF9800); // Bright Orange
+  static const Color _athleteDarkLoanAmount = Color(0xFFF40BBA); // Bright Green
+  static const Color _athleteDarkAmountOwed = Color(0xFF60D417); 
+  static const Color _athleteDarkArrears = Color(0xFFF4BE0B); 
 
   // Financial Colors - Ninja Light
   static const Color _ninjaLightLoanAmount = Color(0xFF1976D2); // Blue
-  static const Color _ninjaLightAmountOwed = Color(0xFFD84315); // Deep Orange
+  static const Color _ninjaLightAmountOwed = Color(0xFFEB0C10); 
   static const Color _ninjaLightArrears = Color(0xFF388E3C); // Forest Green
 
   // Financial Colors - Ninja Dark
   static const Color _ninjaDarkLoanAmount = Color(0xFF42A5F5); // Light Blue
-  static const Color _ninjaDarkAmountOwed = Color(0xFFFF7043); // Coral
-  static const Color _ninjaDarkArrears = Color(0xFF66BB6A); // Light Green
+  static const Color _ninjaDarkAmountOwed = Color(0xFFF4BE0B); 
+  static const Color _ninjaDarkArrears = Color(0xFF88F06E); // Light Green
 
   static ThemeData athleteLightTheme = ThemeData(
     useMaterial3: true,
@@ -446,13 +446,13 @@ class AppThemes {
   static Color getTotalOwedColor(String themeName) {
     switch (themeName) {
       case 'athlete_light':
-        return const Color.fromARGB(255, 189, 3, 49);
+        return const Color.fromRGBO(27, 103, 173, 1);
       case 'athlete_dark':
-        return const Color.fromARGB(255, 252, 248, 2);
+        return const Color.fromARGB(255, 206, 173, 83);
       case 'ninja_light':
-        return const Color.fromARGB(255, 219, 5, 41);
+        return const Color.fromARGB(255, 97, 80, 3);
       case 'ninja_dark':
-        return const Color.fromARGB(255, 207, 243, 3);
+        return const Color.fromARGB(255, 224, 160, 41);
       default:
         return const Color(0xFFE91E63);
     }
