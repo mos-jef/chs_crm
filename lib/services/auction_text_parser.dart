@@ -65,6 +65,18 @@ class AuctionTextParser {
         continue;
       }
 
+      // ✅ NEW: Extract Estimated Value / Zestimate manu entry
+      if (_isEstimatedValueLine(line)) {
+        final estimatedValue = _extractMoneyAmount(line);
+        if (estimatedValue != null) {
+          currentProperty = currentProperty!.copyWith(
+            estimatedSaleValue: estimatedValue,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
       // ✅ NEW: Extract "Total Required to Reinstate" → arrears
       if (_isReinstateAmountLine(line)) {
         final reinstateAmount = _extractMoneyAmount(line);
@@ -256,7 +268,7 @@ class AuctionTextParser {
         lowerLine.startsWith('date:');
   }
 
-  // ✅ NEW: Extract dollar amount from line
+  // ✅ Extract dollar amount from line
   static double? _extractMoneyAmount(String line) {
     // Match patterns like: $17,043.78 or $189,419.05
     final moneyPattern = RegExp(r'\$([0-9,]+\.?\d*)');
@@ -370,6 +382,19 @@ class AuctionTextParser {
     return line.contains('Price Reduced') ||
         line.contains('Hot') ||
         line.contains('FCL Predict');
+  }
+
+  // ✅  Detect estimated value lines
+  static bool _isEstimatedValueLine(String line) {
+    final lowerLine = line.toLowerCase();
+    return lowerLine.contains('estimated value') ||
+        lowerLine.contains('est. value') ||
+        lowerLine.contains('est value') ||
+        lowerLine.contains('zestimate') ||
+        lowerLine.contains('estimated sale') ||
+        lowerLine.contains('market value') ||
+        lowerLine.contains('appraised value') ||
+        lowerLine.contains('zillow estimate');
   }
 
   static Future<PropertyFile> _createNewProperty() async {

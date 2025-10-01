@@ -17,6 +17,7 @@ class PropertyFile {
   final double? loanAmount;
   final double? amountOwed;
   final double? arrears;
+  final double? estimatedSaleValue; 
   final String? zillowUrl;
   final List<Contact> contacts;
   final List<Document> documents;
@@ -40,6 +41,7 @@ class PropertyFile {
     this.taxAccountNumber,
     this.amountOwed,
     this.arrears,
+    this.estimatedSaleValue,
     this.zillowUrl,
     this.contacts = const [],
     this.documents = const [],
@@ -53,6 +55,12 @@ class PropertyFile {
   })  : id = id ?? generateId('property'),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
+
+        // ✅ Calculate Profit Margin
+  double? get estimatedProfitMargin {
+    if (estimatedSaleValue == null || amountOwed == null) return null;
+    return estimatedSaleValue! - amountOwed!;
+  }
 
   double get totalOwed {
     final loan = loanAmount ?? 0.0;
@@ -73,6 +81,7 @@ class PropertyFile {
     double? loanAmount,
     double? amountOwed,
     double? arrears,
+    double? estimatedSaleValue,
     String? zillowUrl,
     List<Contact>? contacts,
     List<Document>? documents,
@@ -96,6 +105,7 @@ class PropertyFile {
       loanAmount: loanAmount ?? this.loanAmount,
       amountOwed: amountOwed ?? this.amountOwed,
       arrears: arrears ?? this.arrears,
+      estimatedSaleValue: estimatedSaleValue ?? this.estimatedSaleValue, 
       zillowUrl: zillowUrl ?? this.zillowUrl,
       contacts: contacts ?? this.contacts,
       documents: documents ?? this.documents,
@@ -135,6 +145,7 @@ class PropertyFile {
         'loanAmount': loanAmount,
         'amountOwed': amountOwed,
         'arrears': arrears,
+        'estimatedSaleValue': estimatedSaleValue,
         'zillowUrl': zillowUrl,
         'contacts': contacts.map((x) => x.toMap()).toList(),
         'documents': documents.map((x) => x.toMap()).toList(),
@@ -159,6 +170,7 @@ class PropertyFile {
         loanAmount: map['loanAmount']?.toDouble(),
         amountOwed: map['amountOwed']?.toDouble(),
         arrears: map['arrears']?.toDouble(),
+        estimatedSaleValue: map['estimatedSaleValue']?.toDouble(),
         zillowUrl: map['zillowUrl'],
         contacts: List<Contact>.from(
             map['contacts']?.map((x) => Contact.fromMap(x)) ?? []),

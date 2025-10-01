@@ -24,6 +24,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController _loanAmountController;
   late TextEditingController _amountOwedController;
   late TextEditingController _arrearsController;
+  late TextEditingController _estimatedSaleValueController;
 
   bool _isLoading = false;
 
@@ -46,6 +47,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _arrearsController = TextEditingController(
       text: widget.property.arrears?.toString() ?? '',
     );
+    _estimatedSaleValueController = TextEditingController(
+      text: widget.property.estimatedSaleValue?.toString() ?? '',
+    );
   }
 
   @override
@@ -58,6 +62,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     _loanAmountController.dispose();
     _amountOwedController.dispose();
     _arrearsController.dispose();
+    _estimatedSaleValueController.dispose();
     super.dispose();
   }
 
@@ -95,6 +100,10 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         arrears: _arrearsController.text.isNotEmpty // ADD THIS BLOCK
             ? double.tryParse(_arrearsController.text)
             : null,
+        estimatedSaleValue:
+          _estimatedSaleValueController.text.isNotEmpty 
+              ? double.tryParse(_estimatedSaleValueController.text)
+              : null,  
         zillowUrl: latestProperty.zillowUrl, // From latest
         contacts: latestProperty.contacts, // From latest
         documents: latestProperty.documents, // From latest
@@ -263,6 +272,17 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
                 }
                 return null;
               },
+            ),
+
+            TextFormField(
+              controller: _estimatedSaleValueController,
+              decoration: const InputDecoration(
+                labelText: 'Estimated Sale Value',
+                helperText: 'Enter Zillow Zestimate or your estimate',
+                prefixText: '\$',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 32),
 

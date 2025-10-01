@@ -33,7 +33,8 @@ class Validators {
 
   static double? parseAmount(String? value) {
     if (value == null || value.isEmpty) return null;
-    final cleanValue = value.replaceAll(RegExp(r'[\$,]'), '');
+    // Remove dollar signs, commas, and any whitespace
+    final cleanValue = value.replaceAll(RegExp(r'[\$,\s]'), '');
     return double.tryParse(cleanValue);
   }
 

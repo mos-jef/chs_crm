@@ -881,8 +881,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
 
+                                // Estimated Profit Line
 
-                                // ADD THIS NEW SALE DATE LINE:
+                                if (property.estimatedProfitMargin != null)
+                                  Text(
+                                    'Est. Profit: \$${NumberFormat('#,##0.00').format(property.estimatedProfitMargin!)}',
+                                    style: TextStyle(
+                                      color: AppThemes.getLoanAmountColor(
+                                        themeProvider.currentTheme,
+                                      ),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                // SALE DATE LINE:
 
                                 if (_getNextAuctionDate(property) != null)
                                   Text(

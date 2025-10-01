@@ -1,6 +1,7 @@
 import 'package:chs_crm/providers/theme_provider.dart';
 import 'package:chs_crm/utils/app_themes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for clipboard functionality
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/property_file.dart';
@@ -18,7 +19,7 @@ class OverviewTab extends StatelessWidget {
       children: [
         _buildPropertyInfoSection(),
         const SizedBox(height: 16),
-        _buildZillowSection(context), 
+        _buildZillowSection(context),
         const SizedBox(height: 16),
         _buildFinancialInfoSection(),
         const SizedBox(height: 16),
@@ -43,12 +44,12 @@ class OverviewTab extends StatelessWidget {
 
   Widget _buildPropertyInfoSection() {
     return _buildInfoCard('Property Information', Icons.home, [
-      _buildInfoRow('File Number', property.fileNumber),
-      _buildInfoRow('Address', property.address),
-      _buildInfoRow('City', property.city),
-      _buildInfoRow('State', property.state),
-      _buildInfoRow('ZIP Code', property.zipCode),
-      _buildInfoRow('County', _getCountyFromNotes()),
+      _buildSelectableInfoRow('File Number', property.fileNumber),
+      _buildSelectableInfoRow('Address', property.address),
+      _buildSelectableInfoRow('City', property.city),
+      _buildSelectableInfoRow('State', property.state),
+      _buildSelectableInfoRow('ZIP Code', property.zipCode),
+      _buildSelectableInfoRow('County', _getCountyFromNotes()),
     ]);
   }
 
@@ -56,31 +57,47 @@ class OverviewTab extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return _buildInfoCard('Financial Information', Icons.attach_money, [
-          _buildInfoRow(
+          _buildSelectableInfoRow(
             'Loan Amount',
             property.loanAmount != null
                 ? '\$${NumberFormat('#,##0.00').format(property.loanAmount!)}'
                 : 'Not specified',
             textColor: AppThemes.getLoanAmountColor(themeProvider.currentTheme),
           ),
-          _buildInfoRow(
+          _buildSelectableInfoRow(
             'Amount Owed',
             property.amountOwed != null
                 ? '\$${NumberFormat('#,##0.00').format(property.amountOwed!)}'
                 : 'Not specified',
             textColor: AppThemes.getAmountOwedColor(themeProvider.currentTheme),
           ),
-          _buildInfoRow(
+          _buildSelectableInfoRow(
             'Arrears',
             property.arrears != null
                 ? '\$${NumberFormat('#,##0.00').format(property.arrears!)}'
                 : 'Not specified',
             textColor: AppThemes.getArrearsColor(themeProvider.currentTheme),
           ),
+          _buildSelectableInfoRow(
+            'Est. Sale Value',
+            property.estimatedSaleValue != null
+                ? '\$${NumberFormat('#,##0.00').format(property.estimatedSaleValue!)}'
+                : 'Not specified',
+            textColor: Colors.green[700],
+          ),
+          if (property.estimatedProfitMargin != null)
+            _buildSelectableInfoRow(
+              'Est. Profit Margin',
+              '\$${NumberFormat('#,##0.00').format(property.estimatedProfitMargin!)}',
+              highlight: true,
+              textColor: property.estimatedProfitMargin! > 0
+                  ? Colors.green[700]
+                  : Colors.red[700],
+            ),
           if (property.loanAmount != null ||
               property.amountOwed != null ||
               property.arrears != null)
-            _buildInfoRow(
+            _buildSelectableInfoRow(
               'Total Owed',
               '\$${NumberFormat('#,##0.00').format(property.totalOwed)}',
               highlight: true,
@@ -98,7 +115,7 @@ class OverviewTab extends StatelessWidget {
       'Contacts',
       Icons.contacts,
       property.contacts.isEmpty
-          ? [const Text('No contacts added')]
+          ? [const SelectableText('No contacts added')]
           : property.contacts
               .map(
                 (contact) => Card(
@@ -108,15 +125,15 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        SelectableText(
                           contact.name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text(contact.role),
+                        SelectableText(contact.role),
                         if (contact.phone != null)
-                          Text('Phone: ${contact.phone}'),
+                          SelectableText('Phone: ${contact.phone}'),
                         if (contact.email != null)
-                          Text('Email: ${contact.email}'),
+                          SelectableText('Email: ${contact.email}'),
                       ],
                     ),
                   ),
@@ -203,25 +220,25 @@ class OverviewTab extends StatelessWidget {
           property.zillowUrl == null || property.zillowUrl!.isEmpty
               ? [const Text('No Zillow URL added')]
               : [
-                InkWell(
-                  onTap: () {
-                    web.window.open(property.zillowUrl!, '_blank');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      property.zillowUrl!,
-                      style: TextStyle(
-                        color: AppThemes.getTotalOwedColor(
-                          themeProvider.currentTheme,
+                  InkWell(
+                    onTap: () {
+                      web.window.open(property.zillowUrl!, '_blank');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Text(
+                        property.zillowUrl!,
+                        style: TextStyle(
+                          color: AppThemes.getTotalOwedColor(
+                            themeProvider.currentTheme,
+                          ),
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
                         ),
-                        fontWeight: FontWeight.bold, // Bold as requested
-                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
         );
       },
     );
@@ -232,7 +249,7 @@ class OverviewTab extends StatelessWidget {
       'Judgments',
       Icons.gavel,
       property.judgments.isEmpty
-          ? [const Text('No judgments recorded')]
+          ? [const SelectableText('No judgments recorded')]
           : property.judgments
               .map(
                 (judgment) => Card(
@@ -242,16 +259,17 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        SelectableText(
                           'Case: ${judgment.caseNumber}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text('Status: ${judgment.status}'),
-                        Text('County: ${judgment.county}, ${judgment.state}'),
-                        Text('Debtor: ${judgment.debtor}'),
-                        Text('Grantee: ${judgment.grantee}'),
+                        SelectableText('Status: ${judgment.status}'),
+                        SelectableText(
+                            'County: ${judgment.county}, ${judgment.state}'),
+                        SelectableText('Debtor: ${judgment.debtor}'),
+                        SelectableText('Grantee: ${judgment.grantee}'),
                         if (judgment.amount != null)
-                          Text(
+                          SelectableText(
                             'Amount: \$${NumberFormat('#,##0.00').format(judgment.amount!)}',
                           ),
                       ],
@@ -268,7 +286,7 @@ class OverviewTab extends StatelessWidget {
       'Notes',
       Icons.note,
       property.notes.isEmpty
-          ? [const Text('No notes added')]
+          ? [const SelectableText('No notes added')]
           : property.notes
               .take(3)
               .map(
@@ -279,20 +297,19 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        SelectableText(
                           note.subject,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text(
-                          DateFormat(
-                            'MMM d, yyyy h:mm a',
-                          ).format(note.createdAt),
+                        SelectableText(
+                          DateFormat('MMM d, yyyy h:mm a')
+                              .format(note.createdAt),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
                           ),
                         ),
-                        Text(note.preview),
+                        SelectableText(note.preview),
                       ],
                     ),
                   ),
@@ -307,7 +324,7 @@ class OverviewTab extends StatelessWidget {
       'Trustees',
       Icons.account_balance_wallet,
       property.trustees.isEmpty
-          ? [const Text('No trustees added')]
+          ? [const SelectableText('No trustees added')]
           : property.trustees
               .map(
                 (trustee) => Card(
@@ -317,13 +334,13 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        SelectableText(
                           trustee.name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text('Institution: ${trustee.institution}'),
+                        SelectableText('Institution: ${trustee.institution}'),
                         if (trustee.phoneNumber != null)
-                          Text('Phone: ${trustee.phoneNumber}'),
+                          SelectableText('Phone: ${trustee.phoneNumber}'),
                       ],
                     ),
                   ),
@@ -338,7 +355,7 @@ class OverviewTab extends StatelessWidget {
       'Auctions',
       Icons.event,
       property.auctions.isEmpty
-          ? [const Text('No auctions scheduled')]
+          ? [const SelectableText('No auctions scheduled')]
           : property.auctions
               .map(
                 (auction) => Card(
@@ -348,18 +365,18 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        SelectableText(
                           '${auction.formattedDate} at ${auction.formattedTime}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text('Place: ${auction.place}'),
+                        SelectableText('Place: ${auction.place}'),
                         if (auction.openingBid != null)
-                          Text(
+                          SelectableText(
                             'Opening Bid: \$${NumberFormat('#,##0.00').format(auction.openingBid!)}',
                           ),
                         if (auction.auctionCompleted &&
                             auction.salesAmount != null)
-                          Text(
+                          SelectableText(
                             'Sales Amount: \$${NumberFormat('#,##0.00').format(auction.salesAmount!)}',
                             style: const TextStyle(
                               color: Colors.green,
@@ -373,10 +390,9 @@ class OverviewTab extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                auction.auctionCompleted
-                                    ? Colors.green
-                                    : Colors.orange,
+                            color: auction.auctionCompleted
+                                ? Colors.green
+                                : Colors.orange,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -404,30 +420,31 @@ class OverviewTab extends StatelessWidget {
       'Vesting Information',
       Icons.account_balance,
       property.vesting == null || property.vesting!.owners.isEmpty
-          ? [const Text('No vesting information')]
+          ? [const SelectableText('No vesting information')]
           : [
-            Text('Type: ${property.vesting!.vestingType}'),
-            const SizedBox(height: 8),
-            ...property.vesting!.owners.map(
-              (owner) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(owner.name),
-                    Text('${owner.percentage.toStringAsFixed(1)}%'),
-                  ],
+              SelectableText('Type: ${property.vesting!.vestingType}'),
+              const SizedBox(height: 8),
+              ...property.vesting!.owners.map(
+                (owner) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: SelectableText(owner.name)),
+                      SelectableText('${owner.percentage.toStringAsFixed(1)}%'),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
     );
   }
 
   Widget _buildRecordInfoSection() {
     return _buildInfoCard('Record Information', Icons.info, [
-      _buildInfoRow('Created', _formatDateTime(property.createdAt)),
-      _buildInfoRow('Last Updated', _formatDateTime(property.updatedAt)),
+      _buildSelectableInfoRow('Created', _formatDateTime(property.createdAt)),
+      _buildSelectableInfoRow(
+          'Last Updated', _formatDateTime(property.updatedAt)),
     ]);
   }
 
@@ -459,7 +476,8 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
+  // New method for selectable info rows
+  Widget _buildSelectableInfoRow(
     String label,
     String value, {
     bool highlight = false,
@@ -472,7 +490,7 @@ class OverviewTab extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
+            child: SelectableText(
               label,
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
@@ -481,7 +499,7 @@ class OverviewTab extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
+            child: SelectableText(
               value,
               style: TextStyle(
                 fontSize: 16,
@@ -493,6 +511,17 @@ class OverviewTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Old method kept for backward compatibility (not used anymore but doesn't hurt to keep)
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool highlight = false,
+    Color? textColor,
+  }) {
+    return _buildSelectableInfoRow(label, value,
+        highlight: highlight, textColor: textColor);
   }
 
   IconData _getDocumentIcon(String type) {
@@ -517,7 +546,7 @@ class OverviewTab extends StatelessWidget {
         return Icons.gavel;
       case 'court documents':
         return Icons.balance;
-      case 'judgment': // ADD THESE
+      case 'judgment':
         return Icons.gavel;
       case 'foreclosure':
         return Icons.warning;
@@ -542,7 +571,6 @@ class OverviewTab extends StatelessWidget {
     }
   }
 
-  // Helper method for pulling in county from "notes" and displaying in property info on overview tab
   String _getCountyFromNotes() {
     final countyNote = property.notes.firstWhere(
       (note) => note.subject == 'County',
@@ -571,10 +599,9 @@ class OverviewTab extends StatelessWidget {
     final dateStr =
         '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
 
-    final hour =
-        dateTime.hour == 0
-            ? 12
-            : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final hour = dateTime.hour == 0
+        ? 12
+        : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'pm' : 'am';
     final timeStr = '$hour:$minute$period';

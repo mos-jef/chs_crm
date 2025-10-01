@@ -26,6 +26,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final _loanAmountController = TextEditingController();
   final _amountOwedController = TextEditingController();
   final _arrearsController = TextEditingController();
+  final _estimatedSaleValueController = TextEditingController();
 
   bool _isLoading = false;
   String _previewFileNumber = '';
@@ -45,6 +46,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     _loanAmountController.dispose();
     _amountOwedController.dispose();
     _arrearsController.dispose();
+    _estimatedSaleValueController.dispose();
     super.dispose();
   }
 
@@ -86,6 +88,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         loanAmount: Validators.parseAmount(_loanAmountController.text),
         amountOwed: Validators.parseAmount(_amountOwedController.text),
         arrears: Validators.parseAmount(_arrearsController.text),
+        estimatedSaleValue:Validators.parseAmount(_estimatedSaleValueController.text),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -298,6 +301,20 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               keyboardType: TextInputType.number,
               validator: Validators.validateAmount,
             ),
+
+            const SizedBox(height: 16), 
+
+            TextFormField(
+              controller: _estimatedSaleValueController,
+              decoration: const InputDecoration(
+                labelText: 'Estimated Sale Value',
+                helperText: 'Enter Zillow Zestimate or your estimate',
+                prefixText: '\$',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              validator: Validators.validateAmount,
+            ), 
 
             const SizedBox(height: 32),
 

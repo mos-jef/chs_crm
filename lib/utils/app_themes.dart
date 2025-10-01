@@ -42,24 +42,24 @@ class AppThemes {
   static const Color _ninjaDarkFileNumber = Color(0xFFF4A15D);
 
   // Financial Colors - Athlete Light
-  static const Color _athleteLightLoanAmount = Color(0xFF2E7D32); // Green
+  static const Color _athleteLightLoanAmount = Color(0xFF2E7D32); 
   static const Color _athleteLightAmountOwed = Color(0xFF850D8F); 
-  static const Color _athleteLightArrears = Color(0xFFC74600); // Orange
+  static const Color _athleteLightArrears = Color(0xFFC74600); 
 
   // Financial Colors - Athlete Dark
-  static const Color _athleteDarkLoanAmount = Color(0xFFF40BBA); // Bright Green
-  static const Color _athleteDarkAmountOwed = Color(0xFF60D417); 
+  static const Color _athleteDarkLoanAmount = Color(0xFF60D417); 
+  static const Color _athleteDarkAmountOwed = Color(0xFF75D2B4); 
   static const Color _athleteDarkArrears = Color(0xFFF4BE0B); 
 
   // Financial Colors - Ninja Light
-  static const Color _ninjaLightLoanAmount = Color(0xFF1976D2); // Blue
+  static const Color _ninjaLightLoanAmount = Color(0xFF388E3C); 
   static const Color _ninjaLightAmountOwed = Color(0xFFEB0C10); 
-  static const Color _ninjaLightArrears = Color(0xFF388E3C); // Forest Green
+  static const Color _ninjaLightArrears = Color(0xFF1976D2); 
 
   // Financial Colors - Ninja Dark
-  static const Color _ninjaDarkLoanAmount = Color(0xFF42A5F5); // Light Blue
+  static const Color _ninjaDarkLoanAmount = Color(0xFF88F06E); //
   static const Color _ninjaDarkAmountOwed = Color(0xFFF4BE0B); 
-  static const Color _ninjaDarkArrears = Color(0xFF88F06E); // Light Green
+  static const Color _ninjaDarkArrears = Color(0xFF42A5F5); // 
 
   static ThemeData athleteLightTheme = ThemeData(
     useMaterial3: true,
