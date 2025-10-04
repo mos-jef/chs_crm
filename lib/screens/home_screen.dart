@@ -67,8 +67,34 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${months[nextAuction.auctionDate.month - 1]} ${nextAuction.auctionDate.day}, ${nextAuction.auctionDate.year}';
   }
 
-  // ADD THIS METHOD TO YOUR _HomeScreenState CLASS:
-  // (Place it anywhere in the class, maybe after the _getNextAuctionDate method)
+  // Helper: Get owner name from vesting
+  String _getOwnerName(PropertyFile property) {
+    if (property.vesting != null && property.vesting!.owners.isNotEmpty) {
+      final ownerNames = property.vesting!.owners.map((o) => o.name).join(', ');
+      return ownerNames;
+    }
+    return 'TBD';
+  }
+
+  // Helper: Get owner phone from contacts
+  String _getOwnerPhone(PropertyFile property) {
+    final ownerContact = property.contacts
+        .where((c) =>
+            c.role.toLowerCase().contains('owner') ||
+            c.role.toLowerCase().contains('defendant') ||
+            c.role.toLowerCase().contains('borrower'))
+        .firstOrNull;
+
+    if (ownerContact?.phone != null && ownerContact!.phone!.isNotEmpty) {
+      return ownerContact.phone!;
+    }
+
+    final anyContactWithPhone = property.contacts
+        .where((c) => c.phone != null && c.phone!.isNotEmpty)
+        .firstOrNull;
+
+    return anyContactWithPhone?.phone ?? 'TBD';
+  }
 
   void _fixAllAddresses(BuildContext context) async {
     // Show confirmation dialog
@@ -853,10 +879,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   '${property.city}, ${property.state} ${property.zipCode}',
                                   style: TextStyle(
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall?.color,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
                                   ),
                                 ),
 
@@ -881,8 +907,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
 
-                                // Estimated Profit Line
-
                                 if (property.estimatedProfitMargin != null)
                                   Text(
                                     'Est. Profit: \$${NumberFormat('#,##0.00').format(property.estimatedProfitMargin!)}',
@@ -894,8 +918,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
 
-                                // SALE DATE LINE:
-
                                 if (_getNextAuctionDate(property) != null)
                                   Text(
                                     'Sale Date: ${_getNextAuctionDate(property)}',
@@ -906,10 +928,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
+
+                                // NEW: OWNER LINE
+                                Text(
+                                  'Owner: ${_getOwnerName(property)}',
+                                  style: TextStyle(
+                                    color: _getOwnerName(property) == 'TBD'
+                                        ? AppThemes.getFileNumberColor(themeProvider.currentTheme)
+                                        : AppThemes.getFileNumberColor(themeProvider.currentTheme),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+
+                                // NEW: CONTACT LINE
+                                Text(
+                                  'Contact: ${_getOwnerPhone(property)}',
+                                  style: TextStyle(
+                                    color: _getOwnerPhone(property) == 'TBD'
+                                        ? AppThemes.getFileNumberColor(themeProvider.currentTheme)
+                                        : AppThemes.getFileNumberColor(themeProvider.currentTheme),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ],
                             );
                           },
-                        ), 
+                        ),
 
 
                         trailing: Row(

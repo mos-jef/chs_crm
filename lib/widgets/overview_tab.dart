@@ -1,7 +1,8 @@
+// lib/widgets/overview_tab.dart - UPDATED with Owner & Contact Info
 import 'package:chs_crm/providers/theme_provider.dart';
 import 'package:chs_crm/utils/app_themes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Added for clipboard functionality
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/property_file.dart';
@@ -18,6 +19,8 @@ class OverviewTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         _buildPropertyInfoSection(),
+        const SizedBox(height: 16),
+        _buildOwnerContactSection(), // NEW SECTION
         const SizedBox(height: 16),
         _buildZillowSection(context),
         const SizedBox(height: 16),
@@ -53,6 +56,106 @@ class OverviewTab extends StatelessWidget {
     ]);
   }
 
+  // NEW: Owner & Contact Information Section
+  Widget _buildOwnerContactSection() {
+    final ownerName = _getOwnerName();
+    final ownerPhone = _getOwnerPhone();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.person, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Owner Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildSelectableInfoRow(
+              'Owner',
+              ownerName,
+              textColor: ownerName == 'TBD' ? Colors.grey : null,
+            ),
+            _buildSelectableInfoRow(
+              'Contact',
+              ownerPhone,
+              textColor: ownerPhone == 'TBD' ? Colors.grey : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildZillowSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.link, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Zillow Link',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (property.zillowUrl != null && property.zillowUrl!.isNotEmpty)
+              InkWell(
+                onTap: () {
+                  web.window.open(property.zillowUrl!, '_blank');
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.open_in_new,
+                          color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SelectableText(
+                          property.zillowUrl!,
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              const SelectableText(
+                'No Zillow URL available',
+                style: TextStyle(color: Colors.grey),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFinancialInfoSection() {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
@@ -79,32 +182,20 @@ class OverviewTab extends StatelessWidget {
             textColor: AppThemes.getArrearsColor(themeProvider.currentTheme),
           ),
           _buildSelectableInfoRow(
-            'Est. Sale Value',
+            'Estimated Sale Value',
             property.estimatedSaleValue != null
                 ? '\$${NumberFormat('#,##0.00').format(property.estimatedSaleValue!)}'
                 : 'Not specified',
-            textColor: Colors.green[700],
+            textColor: AppThemes.getAmountOwedColor(themeProvider.currentTheme),
           ),
           if (property.estimatedProfitMargin != null)
-            _buildSelectableInfoRow(
-              'Est. Profit Margin',
-              '\$${NumberFormat('#,##0.00').format(property.estimatedProfitMargin!)}',
-              highlight: true,
-              textColor: property.estimatedProfitMargin! > 0
-                  ? Colors.green[700]
-                  : Colors.red[700],
-            ),
-          if (property.loanAmount != null ||
-              property.amountOwed != null ||
-              property.arrears != null)
-            _buildSelectableInfoRow(
-              'Total Owed',
-              '\$${NumberFormat('#,##0.00').format(property.totalOwed)}',
-              highlight: true,
-              textColor: AppThemes.getTotalOwedColor(
-                themeProvider.currentTheme,
+            if (property.estimatedProfitMargin != null)
+              _buildSelectableInfoRow(
+                'Estimated Profit Margin',
+                '\$${NumberFormat('#,##0.00').format(property.estimatedProfitMargin!)}',
+                highlight: true,
+                textColor: AppThemes.getLoanAmountColor(themeProvider.currentTheme),
               ),
-            ),
         ]);
       },
     );
@@ -148,99 +239,46 @@ class OverviewTab extends StatelessWidget {
       'Documents',
       Icons.folder,
       property.documents.isEmpty
-          ? [const Text('No documents uploaded')]
+          ? [const SelectableText('No documents uploaded')]
           : property.documents
+              .take(3)
               .map(
-                (document) => Card(
+                (doc) => Card(
                   margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: InkWell(
-                    onTap: () {
-                      if (document.url != null) {
-                        web.window.open(document.url!, '_blank');
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Document file not available'),
-                          ),
-                        );
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _getDocumentIcon(document.type),
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  document.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                Text(document.type),
-                                Text(
-                                  'Added: ${DateFormat('MMM d, yyyy').format(document.uploadDate)}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.open_in_new,
-                            size: 16,
-                            color: Colors.blue,
-                          ),
-                        ],
-                      ),
+                  child: ListTile(
+                    leading: Icon(_getDocumentIcon(doc.type)),
+                    title: SelectableText(doc.name),
+                    subtitle: SelectableText(
+                      '${doc.type} - ${DateFormat('MMM d, yyyy').format(doc.uploadDate)}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.open_in_new, size: 20),
+
+                      onPressed: () {
+                        if (property.zillowUrl != null) {
+                          web.window.open(property.zillowUrl!, '_blank');
+                        }
+                      },
+
                     ),
                   ),
                 ),
               )
-              .toList(),
-    );
-  }
-
-  Widget _buildZillowSection(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return _buildInfoCard(
-          'Zillow Property Link',
-          Icons.link,
-          property.zillowUrl == null || property.zillowUrl!.isEmpty
-              ? [const Text('No Zillow URL added')]
-              : [
-                  InkWell(
-                    onTap: () {
-                      web.window.open(property.zillowUrl!, '_blank');
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Text(
-                        property.zillowUrl!,
-                        style: TextStyle(
-                          color: AppThemes.getTotalOwedColor(
-                            themeProvider.currentTheme,
-                          ),
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
+              .toList()
+        ..add(
+          property.documents.length > 3
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: SelectableText(
+                    '... and ${property.documents.length - 3} more documents',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-                ],
-        );
-      },
+                )
+              : const SizedBox.shrink(),
+        ),
     );
   }
 
@@ -260,14 +298,10 @@ class OverviewTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SelectableText(
-                          'Case: ${judgment.caseNumber}',
+                          'Case #${judgment.caseNumber}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         SelectableText('Status: ${judgment.status}'),
-                        SelectableText(
-                            'County: ${judgment.county}, ${judgment.state}'),
-                        SelectableText('Debtor: ${judgment.debtor}'),
-                        SelectableText('Grantee: ${judgment.grantee}'),
                         if (judgment.amount != null)
                           SelectableText(
                             'Amount: \$${NumberFormat('#,##0.00').format(judgment.amount!)}',
@@ -282,41 +316,46 @@ class OverviewTab extends StatelessWidget {
   }
 
   Widget _buildNotesSection() {
-    return _buildInfoCard(
-      'Notes',
-      Icons.note,
-      property.notes.isEmpty
-          ? [const SelectableText('No notes added')]
-          : property.notes
-              .take(3)
-              .map(
-                (note) => Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SelectableText(
-                          note.subject,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SelectableText(
-                          DateFormat('MMM d, yyyy h:mm a')
-                              .format(note.createdAt),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+    final noteWidgets = property.notes.isEmpty
+        ? [const SelectableText('No notes added')]
+        : [
+            ...property.notes.take(3).map(
+                  (note) => Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SelectableText(
+                            note.subject,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                        SelectableText(note.preview),
-                      ],
+                          SelectableText(
+                            note.content,
+                            maxLines: 3,
+                            style: const TextStyle(
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              )
-              .toList(),
-    );
+            if (property.notes.length > 3)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: SelectableText(
+                  '... and ${property.notes.length - 3} more notes',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ];
+
+    return _buildInfoCard('Notes', Icons.note, noteWidgets);
   }
 
   Widget _buildTrusteesSection() {
@@ -324,7 +363,7 @@ class OverviewTab extends StatelessWidget {
       'Trustees',
       Icons.account_balance_wallet,
       property.trustees.isEmpty
-          ? [const SelectableText('No trustees added')]
+          ? [const SelectableText('No trustees assigned')]
           : property.trustees
               .map(
                 (trustee) => Card(
@@ -338,9 +377,6 @@ class OverviewTab extends StatelessWidget {
                           trustee.name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        SelectableText('Institution: ${trustee.institution}'),
-                        if (trustee.phoneNumber != null)
-                          SelectableText('Phone: ${trustee.phoneNumber}'),
                       ],
                     ),
                   ),
@@ -476,7 +512,6 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  // New method for selectable info rows
   Widget _buildSelectableInfoRow(
     String label,
     String value, {
@@ -511,17 +546,6 @@ class OverviewTab extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  // Old method kept for backward compatibility (not used anymore but doesn't hurt to keep)
-  Widget _buildInfoRow(
-    String label,
-    String value, {
-    bool highlight = false,
-    Color? textColor,
-  }) {
-    return _buildSelectableInfoRow(label, value,
-        highlight: highlight, textColor: textColor);
   }
 
   IconData _getDocumentIcon(String type) {
@@ -578,6 +602,38 @@ class OverviewTab extends StatelessWidget {
           subject: '', content: 'Not available', createdAt: DateTime.now()),
     );
     return countyNote.content.replaceAll(' County, Oregon', '');
+  }
+
+  // Helper: Get owner name from vesting info
+  String _getOwnerName() {
+    if (property.vesting != null && property.vesting!.owners.isNotEmpty) {
+      // If multiple owners, join their names
+      final ownerNames = property.vesting!.owners.map((o) => o.name).join(', ');
+      return ownerNames;
+    }
+    return 'TBD';
+  }
+
+  // Helper: Get owner phone from contacts
+  String _getOwnerPhone() {
+    // Look for a contact with role "Owner" or "Defendant/Borrower"
+    final ownerContact = property.contacts
+        .where((c) =>
+            c.role.toLowerCase().contains('owner') ||
+            c.role.toLowerCase().contains('defendant') ||
+            c.role.toLowerCase().contains('borrower'))
+        .firstOrNull;
+
+    if (ownerContact?.phone != null && ownerContact!.phone!.isNotEmpty) {
+      return ownerContact.phone!;
+    }
+
+    // Fallback: check if any contact has a phone number
+    final anyContactWithPhone = property.contacts
+        .where((c) => c.phone != null && c.phone!.isNotEmpty)
+        .firstOrNull;
+
+    return anyContactWithPhone?.phone ?? 'TBD';
   }
 
   String _formatDateTime(DateTime dateTime) {

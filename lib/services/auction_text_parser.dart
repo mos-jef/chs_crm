@@ -1,4 +1,4 @@
-// lib/services/auction_text_parser.dart - FIXED VERSION WITH ZILLOW URL SEPARATION
+// lib/services/auction_text_parser.dart - FIXED: Address AND Dollar Amount Trigger
 import 'package:chs_crm/services/property_enhancement_service.dart';
 import 'package:flutter/material.dart';
 import '../models/property_file.dart';
@@ -31,8 +31,9 @@ class AuctionTextParser {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      // FIXED: Only detect new property on dollar amounts, NOT on bid types
-      final isNewProperty = _isNewPropertyTrigger(line);
+      // ✅ FIXED: Trigger new property on BOTH address lines AND dollar amounts
+      final isNewProperty =
+          _isNewPropertyTrigger(line, i > 0 ? lines[i - 1] : null);
 
       if (isNewProperty) {
         // Save previous property
@@ -43,12 +44,27 @@ class AuctionTextParser {
         // Start new property
         currentProperty = await _createNewProperty();
 
-        // Extract price from dollar line
-        final bidMatch = RegExp(r'\$([0-9,]+)').firstMatch(line);
-        if (bidMatch != null) {
-          final bidAmount =
-              double.tryParse(bidMatch.group(1)!.replaceAll(',', ''));
-          currentProperty = _updatePropertyWithBid(currentProperty, bidAmount);
+        // If this is an address line, extract it immediately
+        if (_isAddressLine(line)) {
+          final addressParts = _parseFullAddress(line);
+          currentProperty = currentProperty.copyWith(
+            address: addressParts['streetAddress']!,
+            city: addressParts['city']!,
+            state: addressParts['state']!,
+            zipCode: addressParts['zipCode']!,
+            updatedAt: DateTime.now(),
+          );
+        }
+
+        // If it's a dollar line, extract the bid
+        else if (RegExp(r'^\$[0-9,]+').hasMatch(line)) {
+          final bidMatch = RegExp(r'\$([0-9,]+)').firstMatch(line);
+          if (bidMatch != null) {
+            final bidAmount =
+                double.tryParse(bidMatch.group(1)!.replaceAll(',', ''));
+            currentProperty =
+                _updatePropertyWithBid(currentProperty, bidAmount);
+          }
         }
 
         continue;
@@ -56,7 +72,7 @@ class AuctionTextParser {
 
       if (currentProperty == null) continue;
 
-      // ✅ NEW: Extract Zillow URL (and DON'T treat it as an address!)
+      // Extract Zillow URL
       if (_isZillowUrl(line)) {
         currentProperty = currentProperty.copyWith(
           zillowUrl: line.trim(),
@@ -65,11 +81,41 @@ class AuctionTextParser {
         continue;
       }
 
-      // ✅ NEW: Extract Estimated Value / Zestimate manu entry
+      // Extract City, State, ZIP
+      if (_isCityStateLine(line)) {
+        // Parse just the city/state/zip from a line like "WOODBURN, OR 97071"
+        final cityStatePattern =
+            RegExp(r'^([A-Za-z\s]+),\s*([A-Z]{2})\s+(\d{5})');
+        final match = cityStatePattern.firstMatch(line);
+
+        if (match != null) {
+          currentProperty = currentProperty.copyWith(
+            city: match.group(1)!.trim(),
+            state: match.group(2)!,
+            zipCode: match.group(3)!,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // Extract County
+      if (_isCountyLine(line)) {
+        final county = _extractCountyName(line);
+        if (county != null) {
+          currentProperty = currentProperty.copyWith(
+            county: county,
+            updatedAt: DateTime.now(),
+          );
+        }
+        continue;
+      }
+
+      // Extract Estimated Value / Resale
       if (_isEstimatedValueLine(line)) {
         final estimatedValue = _extractMoneyAmount(line);
         if (estimatedValue != null) {
-          currentProperty = currentProperty!.copyWith(
+          currentProperty = currentProperty.copyWith(
             estimatedSaleValue: estimatedValue,
             updatedAt: DateTime.now(),
           );
@@ -77,20 +123,21 @@ class AuctionTextParser {
         continue;
       }
 
-      // ✅ NEW: Extract "Total Required to Reinstate" → arrears
-      if (_isReinstateAmountLine(line)) {
-        final reinstateAmount = _extractMoneyAmount(line);
-        if (reinstateAmount != null) {
+      // Extract "Arrears" amount
+      if (line.toLowerCase().contains('arrears:')) {
+        final arrearsAmount = _extractMoneyAmount(line);
+        if (arrearsAmount != null) {
           currentProperty = currentProperty.copyWith(
-            arrears: reinstateAmount,
+            arrears: arrearsAmount,
             updatedAt: DateTime.now(),
           );
         }
         continue;
       }
 
-      // ✅ NEW: Extract "Total Required to Payoff" → amountOwed
-      if (_isPayoffAmountLine(line)) {
+      // Extract "Full Payoff" amount
+      if (line.toLowerCase().contains('full payoff:') ||
+          line.toLowerCase().contains('payoff:')) {
         final payoffAmount = _extractMoneyAmount(line);
         if (payoffAmount != null) {
           currentProperty = currentProperty.copyWith(
@@ -101,7 +148,7 @@ class AuctionTextParser {
         continue;
       }
 
-      // ✅ NEW: Extract Owner information
+      // Extract Owner information
       if (_isOwnerLine(line)) {
         final ownerName = _extractOwnerName(line);
         if (ownerName != null) {
@@ -111,62 +158,76 @@ class AuctionTextParser {
         continue;
       }
 
-      // ✅ NEW: Extract Parcel/APN information
-      if (_isParcelLine(line)) {
-        final parcelNumber = _extractParcelNumber(line);
-        if (parcelNumber != null) {
+      // Extract Tax Account Number
+      if (line.toLowerCase().contains('tax no.:') ||
+          line.toLowerCase().contains('tax account')) {
+        final taxNumber = _extractTaxNumber(line);
+        if (taxNumber != null) {
           currentProperty = currentProperty.copyWith(
-            taxAccountNumber: parcelNumber,
+            taxAccountNumber: taxNumber,
             updatedAt: DateTime.now(),
           );
         }
         continue;
       }
 
-      // ✅ NEW: Extract County information
-      if (_isCountyLine(line)) {
-        final countyName = _extractCountyName(line);
-        if (countyName != null) {
-          final countyNote = Note(
-            subject: 'County',
-            content: countyName,
-            createdAt: DateTime.now(),
-          );
-          currentProperty = currentProperty.copyWith(
-            notes: [...currentProperty.notes, countyNote],
-            updatedAt: DateTime.now(),
-          );
-        }
-        continue;
-      }
-
-      // ✅ NEW: Extract Auction Date
-      if (_isAuctionDateLine(line)) {
+      // Extract Auction Date
+      if (line.toLowerCase().startsWith('auction date:') ||
+          line.toLowerCase().startsWith('auction:')) {
         final auctionDate = _extractAuctionDate(line);
         if (auctionDate != null) {
-          // Store temporarily in notes, will be moved to proper auction object later
-          final dateNote = Note(
-            subject: 'Auction Date',
-            content: line,
-            createdAt: DateTime.now(),
-          );
-          currentProperty = currentProperty.copyWith(
-            notes: [...currentProperty.notes, dateNote],
-            updatedAt: DateTime.now(),
-          );
+          // Look ahead for time and place
+          String? time;
+          String? place;
+
+          if (i + 1 < lines.length &&
+              lines[i + 1].toLowerCase().startsWith('time:')) {
+            time = lines[i + 1]
+                .replaceFirst(RegExp(r'time:\s*', caseSensitive: false), '')
+                .trim();
+          }
+
+          if (i + 2 < lines.length &&
+              (lines[i + 2].toLowerCase().startsWith('place:') ||
+                  lines[i + 2].toLowerCase().startsWith('location:'))) {
+            place = lines[i + 2]
+                .replaceFirst(
+                    RegExp(r'(place|location):\s*', caseSensitive: false), '')
+                .trim();
+          }
+
+          currentProperty =
+              _addAuctionToProperty(currentProperty, auctionDate, time, place);
         }
         continue;
       }
 
-      // Store bid type information as note
-      if (_isBidTypeLine(line)) {
-        currentProperty = _updatePropertyWithBidType(currentProperty, line);
-        continue;
-      }
+      // Capture Legal Description (multi-line)
+      if (line.toLowerCase().contains('legal description:')) {
+        final legalDescLines = <String>[];
+        // Look ahead for the next few lines
+        for (int j = i + 1; j < lines.length && j < i + 5; j++) {
+          if (_isNewPropertyTrigger(lines[j], lines[j - 1]) ||
+              _isZillowUrl(lines[j]) ||
+              lines[j].toLowerCase().contains('arrears:') ||
+              lines[j].toLowerCase().contains('auction')) {
+            break;
+          }
+          legalDescLines.add(lines[j]);
+        }
 
-      // Address line (FIXED: Won't capture URLs anymore)
-      if (_isAddressLine(line) && !_isZillowUrl(line)) {
-        currentProperty = _updatePropertyWithAddress(currentProperty, line);
+        if (legalDescLines.isNotEmpty) {
+          final legalDesc = legalDescLines.join('\n');
+          final note = Note(
+            subject: 'Legal Description',
+            content: legalDesc,
+            createdAt: DateTime.now(),
+          );
+          currentProperty = currentProperty.copyWith(
+            notes: [...currentProperty.notes, note],
+            updatedAt: DateTime.now(),
+          );
+        }
         continue;
       }
 
@@ -175,24 +236,10 @@ class AuctionTextParser {
         currentProperty = _updatePropertyWithDetails(currentProperty, line);
         continue;
       }
-
-      // Auction info (Bank Owned, Foreclosure Sale)
-      if (line.contains('Bank Owned') || line.contains('Foreclosure Sale')) {
-        currentProperty = _updatePropertyWithAuctionInfo(currentProperty, line);
-        continue;
-      }
-
-      // Special tags (Price Reduced, Hot, FCL Predict)
-      if (_isSpecialTag(line)) {
-        currentProperty = _updatePropertyWithSpecialTag(currentProperty, line);
-        continue;
-      }
     }
 
     // Save last property
     if (currentProperty != null) {
-      // DON'T auto-enhance if we already have a Zillow URL
-      // Only enhance if missing Zillow URL or county
       if (PropertyEnhancementService.needsEnhancement(currentProperty)) {
         final enhancedProperty =
             PropertyEnhancementService.enhanceProperty(currentProperty);
@@ -207,131 +254,112 @@ class AuctionTextParser {
     return properties;
   }
 
-  // FIXED: Only dollar amounts trigger new properties
-  static bool _isNewPropertyTrigger(String line) {
-    // Only dollar amounts like $300,000 or TBD should start new properties
-    return RegExp(r'^\$[0-9,]+$').hasMatch(line) || line.trim() == 'TBD';
+  // ✅ FIXED: Trigger on BOTH address lines AND dollar amounts
+  static bool _isNewPropertyTrigger(String line, String? previousLine) {
+    // Trigger 1: Dollar amounts (standalone)
+    if (RegExp(r'^\$[0-9,]+$').hasMatch(line) || line.trim() == 'TBD') {
+      return true;
+    }
+
+    // Trigger 2: Address lines (street addresses with numbers)
+    // But NOT if the previous line was also an address (prevents double-triggering)
+    if (_isAddressLine(line)) {
+      if (previousLine == null || !_isAddressLine(previousLine)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  // ✅ NEW: Detect Zillow URLs
   static bool _isZillowUrl(String line) {
     return line.toLowerCase().contains('zillow.com') ||
-        line.toLowerCase().startsWith('http');
+        (line.toLowerCase().startsWith('http') && line.contains('zillow'));
   }
 
-  // ✅ NEW: Detect reinstate amount lines
-  static bool _isReinstateAmountLine(String line) {
+  static bool _isEstimatedValueLine(String line) {
     final lowerLine = line.toLowerCase();
-    return lowerLine.contains('reinstate') ||
-        lowerLine.contains('to cure') ||
-        lowerLine.contains('necessary to cure');
+    return lowerLine.contains('estimated value') ||
+        lowerLine.contains('est. resale') ||
+        lowerLine.contains('est. value');
   }
 
-  // ✅ NEW: Detect payoff amount lines
-  static bool _isPayoffAmountLine(String line) {
-    final lowerLine = line.toLowerCase();
-    return (lowerLine.contains('payoff') ||
-            lowerLine.contains('discharge this lien') ||
-            lowerLine.contains('total owed')) &&
-        !lowerLine.contains('reinstate');
-  }
-
-  // ✅ NEW: Detect owner information lines
   static bool _isOwnerLine(String line) {
     final lowerLine = line.toLowerCase();
-    return lowerLine.startsWith('owner:') || lowerLine.contains('owner:');
+    return lowerLine.startsWith('owner:') || lowerLine.startsWith('owners:');
   }
 
-  // ✅ NEW: Detect parcel/APN lines
-  static bool _isParcelLine(String line) {
-    final lowerLine = line.toLowerCase();
-    return lowerLine.contains('parcel') ||
-        lowerLine.contains('apn:') ||
-        lowerLine.contains('tax id') ||
-        lowerLine.contains('account number:');
-  }
-
-  // ✅ NEW: Detect county lines
   static bool _isCountyLine(String line) {
     final lowerLine = line.toLowerCase();
-    // Must contain "county" but NOT be part of an address or auction location
     return lowerLine.contains('county') &&
         !lowerLine.contains('courthouse') &&
         !_isAddressLine(line) &&
         RegExp(r'^[A-Za-z\s]+County\s*$', caseSensitive: false).hasMatch(line);
   }
 
-  // ✅ NEW: Detect auction date lines
-  static bool _isAuctionDateLine(String line) {
-    final lowerLine = line.toLowerCase();
-    return lowerLine.startsWith('auction date:') ||
-        lowerLine.startsWith('date:');
+  static bool _isAddressLine(String line) {
+    if (_isZillowUrl(line)) return false;
+
+    // Don't match property details like "2 bedrooms"
+    if (line.toLowerCase().contains('bedroom') ||
+        line.toLowerCase().contains('bath') ||
+        line.toLowerCase().contains('sq')) {
+      return false;
+    }
+
+    return RegExp(r'\d+.+(St|Ave|Rd|Dr|Ln|Blvd|Way|Ct|Pl|Cir|Highway|Street)',
+            caseSensitive: false)
+        .hasMatch(line);
   }
 
-  // ✅ Extract dollar amount from line
+  static bool _isCityStateLine(String line) {
+    return RegExp(r'^[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}').hasMatch(line);
+  }
+
+  static bool _isPropertyDetailsLine(String line) {
+    return line.contains('bd') ||
+        line.contains('ba') ||
+        line.contains('sq') ||
+        line.contains('bedroom') ||
+        line.contains('bath');
+  }
+
+  // Helper: Extract dollar amount
   static double? _extractMoneyAmount(String line) {
-    // Match patterns like: $17,043.78 or $189,419.05
     final moneyPattern = RegExp(r'\$([0-9,]+\.?\d*)');
     final match = moneyPattern.firstMatch(line);
-
     if (match != null) {
       final amountStr = match.group(1)!.replaceAll(',', '');
       return double.tryParse(amountStr);
     }
-
     return null;
   }
 
-  // ✅ NEW: Extract owner name
+  // Helper: Extract owner name
   static String? _extractOwnerName(String line) {
-    // Remove "Owner:" prefix and trim
-    final ownerPattern = RegExp(r'owner:\s*(.+)', caseSensitive: false);
+    final ownerPattern = RegExp(r'owners?:\s*(.+)', caseSensitive: false);
     final match = ownerPattern.firstMatch(line);
-
-    if (match != null) {
-      return match.group(1)!.trim();
-    }
-
-    return null;
+    return match?.group(1)?.trim();
   }
 
-  // ✅ NEW: Extract parcel number
-  static String? _extractParcelNumber(String line) {
-    // Extract everything after "Parcel Number:", "APN:", etc.
-    final parcelPatterns = [
-      RegExp(r'parcel\s*(?:number)?:\s*(.+)', caseSensitive: false),
-      RegExp(r'apn:\s*(.+)', caseSensitive: false),
-      RegExp(r'tax\s*(?:id|account):\s*(.+)', caseSensitive: false),
-    ];
-
-    for (final pattern in parcelPatterns) {
-      final match = pattern.firstMatch(line);
-      if (match != null) {
-        return match.group(1)!.trim();
-      }
-    }
-
-    return null;
-  }
-
-  // ✅ NEW: Extract county name
+  // Helper: Extract county name
   static String? _extractCountyName(String line) {
-    // Extract just the county name (e.g., "Lane County" → "Lane")
     final countyPattern =
         RegExp(r'^([A-Za-z\s]+)\s*County', caseSensitive: false);
     final match = countyPattern.firstMatch(line.trim());
-
-    if (match != null) {
-      return '${match.group(1)!.trim()} County';
-    }
-
-    return null;
+    return match != null ? '${match.group(1)!.trim()} County' : null;
   }
 
-  // ✅ NEW: Extract auction date
+  // Helper: Extract tax number
+  static String? _extractTaxNumber(String line) {
+    final taxPattern =
+        RegExp(r'tax\s*(?:no\.|account\s*no\.):\s*(.+)', caseSensitive: false);
+    final match = taxPattern.firstMatch(line);
+    return match?.group(1)?.trim();
+  }
+
+  // Helper: Extract auction date
   static DateTime? _extractAuctionDate(String line) {
-    // Try to parse date from line
-    // This is a simple implementation - you may want to enhance it
     final datePattern = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})');
     final match = datePattern.firstMatch(line);
 
@@ -341,7 +369,7 @@ class AuctionTextParser {
       var year = int.tryParse(match.group(3)!);
 
       if (year != null && year < 100) {
-        year += 2000; // Convert 25 to 2025
+        year += 2000;
       }
 
       if (month != null && day != null && year != null) {
@@ -352,169 +380,19 @@ class AuctionTextParser {
         }
       }
     }
-
     return null;
   }
 
-  // ✅ NEW: Update property with owner/vesting info
-  static PropertyFile _updatePropertyWithOwner(
-      PropertyFile property, String ownerName) {
-    final vesting = VestingInfo(
-      owners: [Owner(name: ownerName, percentage: 100.0)],
-      vestingType: 'Unknown',
-    );
-
-    return property.copyWith(
-      vesting: vesting,
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  // Detect bid type lines
-  static bool _isBidTypeLine(String line) {
-    return line.contains('Current Bid') ||
-        line.contains('Opening Bid') ||
-        line.contains('Est. Resale Value');
-  }
-
-  // Detect special tags
-  static bool _isSpecialTag(String line) {
-    return line.contains('Price Reduced') ||
-        line.contains('Hot') ||
-        line.contains('FCL Predict');
-  }
-
-  // ✅  Detect estimated value lines
-  static bool _isEstimatedValueLine(String line) {
-    final lowerLine = line.toLowerCase();
-    return lowerLine.contains('estimated value') ||
-        lowerLine.contains('est. value') ||
-        lowerLine.contains('est value') ||
-        lowerLine.contains('zestimate') ||
-        lowerLine.contains('estimated sale') ||
-        lowerLine.contains('market value') ||
-        lowerLine.contains('appraised value') ||
-        lowerLine.contains('zillow estimate');
-  }
-
-  static Future<PropertyFile> _createNewProperty() async {
-    final fileNumber = await FileNumberService.reserveFileNumber();
-    return PropertyFile(
-      id: '',
-      fileNumber: fileNumber,
-      address: '',
-      city: '',
-      state: 'OR',
-      zipCode: '',
-      taxAccountNumber: null,
-      loanAmount: null,
-      amountOwed: null,
-      arrears: null,
-      zillowUrl: null, // ✅ Explicitly set to null
-      contacts: [],
-      documents: [],
-      judgments: [],
-      notes: [],
-      trustees: [],
-      auctions: [],
-      vesting: null,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  static PropertyFile _updatePropertyWithBid(
-      PropertyFile property, double? bidAmount) {
-    return property.copyWith(
-      loanAmount: bidAmount,
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  static PropertyFile _updatePropertyWithBidType(
-      PropertyFile property, String bidType) {
-    final bidNote = Note(
-      subject: 'Bid Type',
-      content: bidType,
-      createdAt: DateTime.now(),
-    );
-
-    return property.copyWith(
-      notes: [...property.notes, bidNote],
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  static PropertyFile _updatePropertyWithAddress(
-      PropertyFile property, String fullAddressLine) {
-    // Parse full address like "1619 S BERTELSEN RD, EUGENE, OR 97402"
-    final addressComponents = _parseFullAddress(fullAddressLine);
-
-    return property.copyWith(
-      address: addressComponents['streetAddress'] ?? fullAddressLine,
-      city: addressComponents['city'] ?? '',
-      state: addressComponents['state'] ?? 'OR',
-      zipCode: addressComponents['zipCode'] ?? '',
-      updatedAt: DateTime.now(),
-    );
-  }
-
+  // Helper: Parse full address
   static Map<String, String> _parseFullAddress(String fullAddress) {
     try {
       final cleanAddress = fullAddress.trim();
-
-      // Split by commas first
-      final commaParts = cleanAddress.split(',');
-
-      if (commaParts.length >= 3) {
-        // Format: Street, City, State Zip
-        final streetAddress = commaParts[0].trim();
-        final city = commaParts[1].trim();
-        final stateZipPart = commaParts[2].trim();
-
-        final stateZipMatch = RegExp(r'^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$')
-            .firstMatch(stateZipPart);
-
-        if (stateZipMatch != null) {
-          return {
-            'streetAddress': streetAddress,
-            'city': city,
-            'state': stateZipMatch.group(1)!,
-            'zipCode': stateZipMatch.group(2)!,
-          };
-        }
-      } else if (commaParts.length == 2) {
-        final firstPart = commaParts[0].trim();
-        final secondPart = commaParts[1].trim();
-
-        final stateZipMatch =
-            RegExp(r'^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$').firstMatch(secondPart);
-
-        if (stateZipMatch != null) {
-          final firstWords = firstPart.split(' ');
-          if (firstWords.length > 3) {
-            final city = firstWords.last;
-            final streetAddress =
-                firstWords.sublist(0, firstWords.length - 1).join(' ');
-
-            return {
-              'streetAddress': streetAddress,
-              'city': city,
-              'state': stateZipMatch.group(1)!,
-              'zipCode': stateZipMatch.group(2)!,
-            };
-          }
-        }
-      }
-
-      // If parsing fails, try alternative approach
       final stateZipPattern = RegExp(r',\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$');
       final stateZipMatch = stateZipPattern.firstMatch(cleanAddress);
 
       if (stateZipMatch != null) {
         final state = stateZipMatch.group(1)!;
         final zipCode = stateZipMatch.group(2)!;
-
         final beforeStateZip =
             cleanAddress.substring(0, stateZipMatch.start).trim();
         final lastCommaIndex = beforeStateZip.lastIndexOf(',');
@@ -540,7 +418,6 @@ class AuctionTextParser {
         'zipCode': '',
       };
     } catch (e) {
-      print('Error parsing address: $fullAddress - $e');
       return {
         'streetAddress': fullAddress,
         'city': '',
@@ -550,6 +427,89 @@ class AuctionTextParser {
     }
   }
 
+  // Helper: Create new property
+  static Future<PropertyFile> _createNewProperty() async {
+    final fileNumber = await FileNumberService.reserveFileNumber();
+
+    return PropertyFile(
+      id: '',
+      fileNumber: fileNumber,
+      address: '',
+      city: '',
+      state: 'OR',
+      zipCode: '',
+      contacts: [],
+      documents: [],
+      judgments: [],
+      notes: [],
+      trustees: [],
+      auctions: [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Helper: Update with bid amount
+  static PropertyFile _updatePropertyWithBid(
+      PropertyFile property, double? bidAmount) {
+    return property.copyWith(
+      loanAmount: bidAmount,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Helper: Update with owner info
+  static PropertyFile _updatePropertyWithOwner(
+      PropertyFile property, String ownerName) {
+    final vesting = VestingInfo(
+      owners: [Owner(name: ownerName, percentage: 100.0)],
+      vestingType: 'Unknown',
+    );
+
+    return property.copyWith(
+      vesting: vesting,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Helper: Add auction info
+  static PropertyFile _addAuctionToProperty(PropertyFile property,
+      DateTime auctionDate, String? timeStr, String? place) {
+    TimeOfDay time = TimeOfDay(hour: 10, minute: 0);
+
+    if (timeStr != null) {
+      final timeMatch =
+          RegExp(r'(\d{1,2}):(\d{2})\s*(am|pm)?', caseSensitive: false)
+              .firstMatch(timeStr);
+      if (timeMatch != null) {
+        int hour = int.parse(timeMatch.group(1)!);
+        final minute = int.parse(timeMatch.group(2)!);
+        final ampm = timeMatch.group(3)?.toLowerCase();
+
+        if (ampm == 'pm' && hour < 12) hour += 12;
+        if (ampm == 'am' && hour == 12) hour = 0;
+
+        time = TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    final auction = Auction(
+      id: 'auction_${DateTime.now().millisecondsSinceEpoch}',
+      auctionDate: auctionDate,
+      place: place ?? 'County Courthouse',
+      time: time,
+      openingBid: property.loanAmount,
+      auctionCompleted: false,
+      createdAt: DateTime.now(),
+    );
+
+    return property.copyWith(
+      auctions: [...property.auctions, auction],
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Helper: Update with property details
   static PropertyFile _updatePropertyWithDetails(
       PropertyFile property, String detailsLine) {
     final detailsNote = Note(
@@ -562,57 +522,5 @@ class AuctionTextParser {
       notes: [...property.notes, detailsNote],
       updatedAt: DateTime.now(),
     );
-  }
-
-  static PropertyFile _updatePropertyWithAuctionInfo(
-      PropertyFile property, String auctionLine) {
-    final auction = Auction(
-      id: 'auction_${DateTime.now().millisecondsSinceEpoch}',
-      auctionDate: DateTime.now().add(Duration(days: 30)),
-      place: auctionLine.contains('Foreclosure Sale')
-          ? 'Foreclosure Sale'
-          : 'Bank Owned',
-      time: const TimeOfDay(hour: 10, minute: 0),
-      openingBid: property.loanAmount,
-      auctionCompleted: false,
-      createdAt: DateTime.now(),
-    );
-
-    return property.copyWith(
-      auctions: [...property.auctions, auction],
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  static PropertyFile _updatePropertyWithSpecialTag(
-      PropertyFile property, String tagLine) {
-    final tagNote = Note(
-      subject: 'Special Tag',
-      content: tagLine,
-      createdAt: DateTime.now(),
-    );
-
-    return property.copyWith(
-      notes: [...property.notes, tagNote],
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  // Pattern detection helpers
-  static bool _isAddressLine(String line) {
-    // FIXED: Don't match URLs as addresses
-    if (_isZillowUrl(line)) return false;
-
-    return RegExp(r'\d+.+(St|Ave|Rd|Dr|Ln|Blvd|Way|Ct|Pl|Cir|Highway|Street)',
-            caseSensitive: false)
-        .hasMatch(line);
-  }
-
-  static bool _isCityStateLine(String line) {
-    return RegExp(r'^[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5}').hasMatch(line);
-  }
-
-  static bool _isPropertyDetailsLine(String line) {
-    return line.contains('bd') || line.contains('ba') || line.contains('sq');
   }
 }
