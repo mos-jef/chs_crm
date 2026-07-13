@@ -1,0 +1,16 @@
+# CRITICAL: never commit credentials
+firebase-admin-key.json
+scripts/firebase-admin-key.json
+**/firebase-admin-key.json
+*-firebase-adminsdk-*.json
+.env
+.env.local
+
+dist/
+build/
+node_modules/
+
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

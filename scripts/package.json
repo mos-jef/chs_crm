@@ -1,0 +1,7 @@
+{
+  "name": "chs-crm-scripts",
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^13.0.2"
+  }
+}
